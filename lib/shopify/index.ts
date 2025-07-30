@@ -1,61 +1,61 @@
 import {
-  HIDDEN_PRODUCT_TAG,
-  SHOPIFY_GRAPHQL_API_ENDPOINT,
-  TAGS
+    HIDDEN_PRODUCT_TAG,
+    SHOPIFY_GRAPHQL_API_ENDPOINT,
+    TAGS
 } from 'lib/constants';
 import { isShopifyError } from 'lib/type-guards';
 import { ensureStartsWith } from 'lib/utils';
 import {
-  revalidateTag,
-  unstable_cacheTag as cacheTag,
-  unstable_cacheLife as cacheLife
+    unstable_cacheLife as cacheLife,
+    unstable_cacheTag as cacheTag,
+    revalidateTag
 } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  addToCartMutation,
-  createCartMutation,
-  editCartItemsMutation,
-  removeFromCartMutation
+    addToCartMutation,
+    createCartMutation,
+    editCartItemsMutation,
+    removeFromCartMutation
 } from './mutations/cart';
 import { getCartQuery } from './queries/cart';
 import {
-  getCollectionProductsQuery,
-  getCollectionQuery,
-  getCollectionsQuery
+    getCollectionProductsQuery,
+    getCollectionQuery,
+    getCollectionsQuery
 } from './queries/collection';
 import { getMenuQuery } from './queries/menu';
 import { getPageQuery, getPagesQuery } from './queries/page';
 import {
-  getProductQuery,
-  getProductRecommendationsQuery,
-  getProductsQuery
+    getProductQuery,
+    getProductRecommendationsQuery,
+    getProductsQuery
 } from './queries/product';
 import {
-  Cart,
-  Collection,
-  Connection,
-  Image,
-  Menu,
-  Page,
-  Product,
-  ShopifyAddToCartOperation,
-  ShopifyCart,
-  ShopifyCartOperation,
-  ShopifyCollection,
-  ShopifyCollectionOperation,
-  ShopifyCollectionProductsOperation,
-  ShopifyCollectionsOperation,
-  ShopifyCreateCartOperation,
-  ShopifyMenuOperation,
-  ShopifyPageOperation,
-  ShopifyPagesOperation,
-  ShopifyProduct,
-  ShopifyProductOperation,
-  ShopifyProductRecommendationsOperation,
-  ShopifyProductsOperation,
-  ShopifyRemoveFromCartOperation,
-  ShopifyUpdateCartOperation
+    Cart,
+    Collection,
+    Connection,
+    Image,
+    Menu,
+    Page,
+    Product,
+    ShopifyAddToCartOperation,
+    ShopifyCart,
+    ShopifyCartOperation,
+    ShopifyCollection,
+    ShopifyCollectionOperation,
+    ShopifyCollectionProductsOperation,
+    ShopifyCollectionsOperation,
+    ShopifyCreateCartOperation,
+    ShopifyMenuOperation,
+    ShopifyPageOperation,
+    ShopifyPagesOperation,
+    ShopifyProduct,
+    ShopifyProductOperation,
+    ShopifyProductRecommendationsOperation,
+    ShopifyProductsOperation,
+    ShopifyRemoveFromCartOperation,
+    ShopifyUpdateCartOperation
 } from './types';
 
 const domain = process.env.SHOPIFY_STORE_DOMAIN
@@ -310,8 +310,9 @@ export async function getCollectionProducts({
   sortKey?: string;
 }): Promise<Product[]> {
   'use cache';
-  cacheTag(TAGS.collections, TAGS.products);
-  cacheLife('days');
+  cacheTag(TAGS.collections);
+  // Reduce cache time in development
+  cacheLife(process.env.NODE_ENV === 'development' ? 'seconds' : 'days');
 
   const res = await shopifyFetch<ShopifyCollectionProductsOperation>({
     query: getCollectionProductsQuery,
@@ -335,7 +336,8 @@ export async function getCollectionProducts({
 export async function getCollections(): Promise<Collection[]> {
   'use cache';
   cacheTag(TAGS.collections);
-  cacheLife('days');
+  // Reduce cache time in development
+  cacheLife(process.env.NODE_ENV === 'development' ? 'seconds' : 'days');
 
   const res = await shopifyFetch<ShopifyCollectionsOperation>({
     query: getCollectionsQuery
@@ -406,7 +408,8 @@ export async function getPages(): Promise<Page[]> {
 export async function getProduct(handle: string): Promise<Product | undefined> {
   'use cache';
   cacheTag(TAGS.products);
-  cacheLife('days');
+  // Reduce cache time in development
+  cacheLife(process.env.NODE_ENV === 'development' ? 'seconds' : 'days');
 
   const res = await shopifyFetch<ShopifyProductOperation>({
     query: getProductQuery,
@@ -423,7 +426,8 @@ export async function getProductRecommendations(
 ): Promise<Product[]> {
   'use cache';
   cacheTag(TAGS.products);
-  cacheLife('days');
+  // Reduce cache time in development
+  cacheLife(process.env.NODE_ENV === 'development' ? 'seconds' : 'days');
 
   const res = await shopifyFetch<ShopifyProductRecommendationsOperation>({
     query: getProductRecommendationsQuery,
@@ -446,7 +450,8 @@ export async function getProducts({
 }): Promise<Product[]> {
   'use cache';
   cacheTag(TAGS.products);
-  cacheLife('days');
+  // Reduce cache time in development
+  cacheLife(process.env.NODE_ENV === 'development' ? 'seconds' : 'days');
 
   const res = await shopifyFetch<ShopifyProductsOperation>({
     query: getProductsQuery,

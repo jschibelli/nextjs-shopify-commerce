@@ -1,12 +1,13 @@
 import { CartProvider } from 'components/cart/cart-context';
+import DevRevalidateButton from 'components/dev-revalidate-button';
 import { Navbar } from 'components/layout/navbar';
 import { WelcomeToast } from 'components/welcome-toast';
 import { GeistSans } from 'geist/font/sans';
 import { getCart } from 'lib/shopify';
+import { baseUrl } from 'lib/utils';
 import { ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import './globals.css';
-import { baseUrl } from 'lib/utils';
 
 const { SITE_NAME } = process.env;
 
@@ -39,6 +40,7 @@ export default async function RootLayout({
             {children}
             <Toaster closeButton />
             <WelcomeToast />
+            <DevRevalidateButton />
           </main>
         </CartProvider>
       </body>

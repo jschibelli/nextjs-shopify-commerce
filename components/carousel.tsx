@@ -3,10 +3,41 @@ import Link from 'next/link';
 import { GridTileImage } from './grid/tile';
 
 export async function Carousel() {
-  // Collections that start with `hidden-*` are hidden from the search page.
-  const products = await getCollectionProducts({ collection: 'hidden-homepage-carousel' });
+  // Check if environment variables are set
+  if (!process.env.SHOPIFY_STORE_DOMAIN || !process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
+    return (
+      <section className="mx-auto max-w-7xl px-4 py-8">
+        <div className="text-center">
+          <h3 className="text-lg font-semibold mb-2">Featured Products Carousel</h3>
+          <p className="text-gray-600 text-sm">
+            Configure your Shopify environment variables to display products here.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
-  if (!products?.length) return null;
+  // Collections that start with `hidden-*` are hidden from the search page.
+  let products: any[] = [];
+  
+  try {
+    products = await getCollectionProducts({ collection: 'hidden-homepage-carousel' });
+  } catch (error) {
+    console.log('Collection "hidden-homepage-carousel" not found. Please create this collection in your Shopify admin or add products to it.');
+  }
+
+  if (!products?.length) {
+    return (
+      <section className="mx-auto max-w-7xl px-4 py-8">
+        <div className="text-center">
+          <h3 className="text-lg font-semibold mb-2">Featured Products Carousel</h3>
+          <p className="text-gray-600 text-sm">
+            Create a collection named "hidden-homepage-carousel" in your Shopify admin to display products here.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   // Purposefully duplicating products to make the carousel loop and not run out of products on wide screens.
   const carouselProducts = [...products, ...products, ...products];
