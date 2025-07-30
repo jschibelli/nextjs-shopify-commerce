@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { Fragment, Suspense, useEffect, useState } from 'react';
 
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ThemeToggle } from 'components/theme-toggle';
 import { Menu } from 'lib/shopify/types';
 import Search, { SearchSkeleton } from './search';
 
@@ -63,22 +64,25 @@ export default function MobileMenu({ menu }: { menu: Menu[] }) {
           >
             <Dialog.Panel className="fixed bottom-0 left-0 right-0 top-0 flex h-full w-full flex-col bg-white pb-6 dark:bg-black">
               <div className="p-4">
-                <button
-                  className="mb-4 flex h-11 w-11 items-center justify-center rounded-md border border-neutral-200 text-black transition-colors dark:border-neutral-700 dark:text-white"
-                  onClick={closeMobileMenu}
-                  aria-label="Close mobile menu"
-                >
-                  <XMarkIcon className="h-6" />
-                </button>
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    className="flex h-11 w-11 items-center justify-center rounded-md border border-neutral-200 text-black transition-colors dark:border-neutral-700 dark:text-white"
+                    onClick={closeMobileMenu}
+                    aria-label="Close mobile menu"
+                  >
+                    <XMarkIcon className="h-6" />
+                  </button>
+                  <ThemeToggle />
+                </div>
 
                 <div className="mb-4 w-full">
                   <Suspense fallback={<SearchSkeleton />}>
                     <Search />
                   </Suspense>
                 </div>
-                {menu.length ? (
-                  <ul className="flex w-full flex-col">
-                    {menu.map((item: Menu) => (
+                <ul className="flex w-full flex-col">
+                  {menu.length ? (
+                    menu.map((item: Menu) => (
                       <li
                         className="py-2 text-xl text-black transition-colors hover:text-neutral-500 dark:text-white"
                         key={item.title}
@@ -87,9 +91,14 @@ export default function MobileMenu({ menu }: { menu: Menu[] }) {
                           {item.title}
                         </Link>
                       </li>
-                    ))}
-                  </ul>
-                ) : null}
+                    ))
+                  ) : null}
+                  <li className="py-2 text-xl text-black transition-colors hover:text-neutral-500 dark:text-white">
+                    <Link href="/demo" prefetch={true} onClick={closeMobileMenu}>
+                      Demo
+                    </Link>
+                  </li>
+                </ul>
               </div>
             </Dialog.Panel>
           </Transition.Child>

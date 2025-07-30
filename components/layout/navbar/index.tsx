@@ -1,5 +1,6 @@
 import CartModal from 'components/cart/modal';
 import LogoSquare from 'components/logo-square';
+import { ThemeToggle } from 'components/theme-toggle';
 import { getMenu } from 'lib/shopify';
 import { Menu } from 'lib/shopify/types';
 import Link from 'next/link';
@@ -31,9 +32,9 @@ export async function Navbar() {
               {SITE_NAME}
             </div>
           </Link>
-          {menu.length ? (
-            <ul className="hidden gap-6 text-sm md:flex md:items-center">
-              {menu.map((item: Menu) => (
+          <ul className="hidden gap-6 text-sm md:flex md:items-center">
+            {menu.length ? (
+              menu.map((item: Menu) => (
                 <li key={item.title}>
                   <Link
                     href={item.path}
@@ -43,9 +44,18 @@ export async function Navbar() {
                     {item.title}
                   </Link>
                 </li>
-              ))}
-            </ul>
-          ) : null}
+              ))
+            ) : null}
+            <li>
+              <Link
+                href="/demo"
+                prefetch={true}
+                className="text-neutral-500 underline-offset-4 hover:text-black hover:underline dark:text-neutral-400 dark:hover:text-neutral-300"
+              >
+                Demo
+              </Link>
+            </li>
+          </ul>
         </div>
         <div className="hidden justify-center md:flex md:w-1/3">
           <Suspense fallback={<SearchSkeleton />}>
@@ -53,7 +63,10 @@ export async function Navbar() {
           </Suspense>
         </div>
         <div className="flex justify-end md:w-1/3">
-          <CartModal />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <CartModal />
+          </div>
         </div>
       </div>
     </nav>
