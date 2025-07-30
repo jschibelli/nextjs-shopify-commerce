@@ -20,33 +20,84 @@ async function getNewArrivalProducts() {
 
   let products: any[] = [];
   
-  // Try different collection names for new arrivals
-  const collectionNames = ['new-arrivals', 'new', 'latest', 'featured', 'all'];
+  // Try different possible handles for the featured collection
+  const featuredHandles = ['featured-1', 'featured', 'featured-collection', 'featured-products'];
   
-  for (const collectionName of collectionNames) {
+  for (const handle of featuredHandles) {
     try {
-      products = await getCollectionProducts({ collection: collectionName });
-      if (products.length >= 2) break;
+      products = await getCollectionProducts({ collection: handle });
+      
+      if (products.length >= 2) {
+        return {
+          femaleProduct: products[0],
+          maleProduct: products[1]
+        };
+      } else if (products.length === 1) {
+        // Try to get a second product from hydrogen collection
+        try {
+          const hydrogenProducts = await getCollectionProducts({ collection: 'hydrogen' });
+          if (hydrogenProducts.length > 0) {
+            return {
+              femaleProduct: products[0], // Featured product
+              maleProduct: hydrogenProducts[0] // First hydrogen product
+            };
+          }
+        } catch (error) {
+          // Continue to next handle
+        }
+        
+        // If we can't get a second product, return the featured product for both sides
+        return {
+          femaleProduct: products[0],
+          maleProduct: products[0]
+        };
+      }
     } catch (error) {
-      console.log(`Collection "${collectionName}" not found, trying next...`);
+      // Continue to next handle
     }
   }
 
-  // If no products found, return null
-  if (!products.length) {
-    return { femaleProduct: null, maleProduct: null };
+  // Fallback to hydrogen collection
+  try {
+    products = await getCollectionProducts({ collection: 'hydrogen' });
+    if (products.length >= 2) {
+      return {
+        femaleProduct: products[0],
+        maleProduct: products[1]
+      };
+    }
+  } catch (error) {
+    // No fallback available
   }
 
-  // Return first two products as female and male models
-  return {
-    femaleProduct: products[0],
-    maleProduct: products[1]
-  };
+  return { femaleProduct: null, maleProduct: null };
+}
+
+// Helper function to get multiple products from hydrogen collection
+async function getHydrogenProducts() {
+  if (!process.env.SHOPIFY_STORE_DOMAIN || !process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
+    return [null, null, null];
+  }
+
+  try {
+    const products = await getCollectionProducts({ collection: 'hydrogen' });
+    return [
+      products[0] || null,
+      products[1] || null,
+      products[2] || null
+    ];
+  } catch (error) {
+    console.log(`Collection "hydrogen" not found`);
+    return [null, null, null];
+  }
 }
 
 export default async function HomePage() {
   // Get new arrival products for hero section
   const { femaleProduct, maleProduct } = await getNewArrivalProducts();
+
+  // Get multiple products from hydrogen collection
+  const [hydrogenProduct1, hydrogenProduct2, hydrogenProduct3] = await getHydrogenProducts();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -175,52 +226,105 @@ export default async function HomePage() {
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Shop by Category</h2>
+            <h2 className="text-3xl font-bold mb-4 text-gray-900">Shop by Category</h2>
             <p className="text-gray-600">Explore our curated collections</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* T-SHIRTS */}
-            <div className="group cursor-pointer">
+            {/* Hydrogen Product 1 */}
+            <Link href="/search?collection=hydrogen" className="group cursor-pointer">
               <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
-                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
+                {hydrogenProduct1?.featuredImage?.url ? (
+                  <Image
+                    src={hydrogenProduct1.featuredImage.url}
+                    alt={hydrogenProduct1.featuredImage.altText || hydrogenProduct1.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    <div className="text-center text-gray-500">
+                      <div className="text-4xl mb-2">👕</div>
+                      <p className="text-sm">Hydrogen Collection</p>
+                    </div>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors"></div>
                 <div className="absolute bottom-4 left-4 text-white">
-                  <p className="text-sm font-medium">"IN THIS GAME OF LIFE, JUST KEEP PLAYING"</p>
+                  {hydrogenProduct1 ? (
+                    <p className="text-sm font-medium">{hydrogenProduct1.title}</p>
+                  ) : (
+                    <p className="text-sm font-medium">Hydrogen Collection</p>
+                  )}
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">T-SHIRTS</h3>
+              <h3 className="text-xl font-bold mb-2 text-gray-900">HYDROGEN</h3>
               <p className="text-red-600 font-medium">Get up to 20% off</p>
-            </div>
+            </Link>
 
-            {/* JEANS */}
-            <div className="group cursor-pointer">
+            {/* Hydrogen Product 2 */}
+            <Link href="/search?collection=hydrogen" className="group cursor-pointer">
               <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
-                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
+                {hydrogenProduct2?.featuredImage?.url ? (
+                  <Image
+                    src={hydrogenProduct2.featuredImage.url}
+                    alt={hydrogenProduct2.featuredImage.altText || hydrogenProduct2.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    <div className="text-center text-gray-500">
+                      <div className="text-4xl mb-2">👖</div>
+                      <p className="text-sm">Hydrogen Collection</p>
+                    </div>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors"></div>
                 <div className="absolute bottom-4 left-4 text-white">
-                  <p className="text-sm font-medium">"WHEN I IMAGINE MYU ON VACAY"</p>
-                  <p className="text-xs opacity-80">"THINK IT OVER"</p>
+                  {hydrogenProduct2 ? (
+                    <p className="text-sm font-medium">{hydrogenProduct2.title}</p>
+                  ) : (
+                    <p className="text-sm font-medium">Hydrogen Collection</p>
+                  )}
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">JEANS</h3>
+              <h3 className="text-xl font-bold mb-2 text-gray-900">HYDROGEN</h3>
               <p className="text-red-600 font-medium">Get up to 20% off</p>
-            </div>
+            </Link>
 
-            {/* ACCESSORIES */}
-            <div className="group cursor-pointer">
+            {/* Hydrogen Product 3 */}
+            <Link href="/search?collection=hydrogen" className="group cursor-pointer">
               <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
-                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
+                {hydrogenProduct3?.featuredImage?.url ? (
+                  <Image
+                    src={hydrogenProduct3.featuredImage.url}
+                    alt={hydrogenProduct3.featuredImage.altText || hydrogenProduct3.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    <div className="text-center text-gray-500">
+                      <div className="text-4xl mb-2">👜</div>
+                      <p className="text-sm">Hydrogen Collection</p>
+                    </div>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors"></div>
                 <div className="absolute bottom-4 left-4 text-white">
-                  <p className="text-sm font-medium">Mini Backpack, Baseball Cap</p>
-                  <p className="text-xs opacity-80">Smartphone Case</p>
+                  {hydrogenProduct3 ? (
+                    <p className="text-sm font-medium">{hydrogenProduct3.title}</p>
+                  ) : (
+                    <p className="text-sm font-medium">Hydrogen Collection</p>
+                  )}
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">ACCESSORIES</h3>
+              <h3 className="text-xl font-bold mb-2 text-gray-900">HYDROGEN</h3>
               <p className="text-red-600 font-medium">Get up to 20% off</p>
-            </div>
+            </Link>
           </div>
         </div>
       </section>
-
-
 
       {/* Floating Settings Icon */}
       <div className="fixed bottom-8 right-8 z-50">
