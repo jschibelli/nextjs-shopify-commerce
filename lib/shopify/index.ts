@@ -311,8 +311,7 @@ export async function getCollectionProducts({
 }): Promise<Product[]> {
   'use cache';
   cacheTag(TAGS.collections);
-  // Reduce cache time in development
-  cacheLife(process.env.NODE_ENV === 'development' ? 'seconds' : 'days');
+  cacheLife('days');
 
   const res = await shopifyFetch<ShopifyCollectionProductsOperation>({
     query: getCollectionProductsQuery,
@@ -336,8 +335,7 @@ export async function getCollectionProducts({
 export async function getCollections(): Promise<Collection[]> {
   'use cache';
   cacheTag(TAGS.collections);
-  // Reduce cache time in development
-  cacheLife(process.env.NODE_ENV === 'development' ? 'seconds' : 'days');
+  cacheLife('days');
 
   const res = await shopifyFetch<ShopifyCollectionsOperation>({
     query: getCollectionsQuery
@@ -408,8 +406,7 @@ export async function getPages(): Promise<Page[]> {
 export async function getProduct(handle: string): Promise<Product | undefined> {
   'use cache';
   cacheTag(TAGS.products);
-  // Reduce cache time in development
-  cacheLife(process.env.NODE_ENV === 'development' ? 'seconds' : 'days');
+  cacheLife('days');
 
   const res = await shopifyFetch<ShopifyProductOperation>({
     query: getProductQuery,
@@ -426,8 +423,7 @@ export async function getProductRecommendations(
 ): Promise<Product[]> {
   'use cache';
   cacheTag(TAGS.products);
-  // Reduce cache time in development
-  cacheLife(process.env.NODE_ENV === 'development' ? 'seconds' : 'days');
+  cacheLife('days');
 
   const res = await shopifyFetch<ShopifyProductRecommendationsOperation>({
     query: getProductRecommendationsQuery,
@@ -450,8 +446,7 @@ export async function getProducts({
 }): Promise<Product[]> {
   'use cache';
   cacheTag(TAGS.products);
-  // Reduce cache time in development
-  cacheLife(process.env.NODE_ENV === 'development' ? 'seconds' : 'days');
+  cacheLife('days');
 
   const res = await shopifyFetch<ShopifyProductsOperation>({
     query: getProductsQuery,
