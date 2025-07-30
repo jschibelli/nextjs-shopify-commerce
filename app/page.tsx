@@ -1,12 +1,8 @@
-import { Carousel } from 'components/carousel';
-import { FeaturedCollection } from 'components/featured-collection';
-import { ThreeItemGrid } from 'components/grid/three-items';
-import CTA from 'components/sections/cta/default';
-import Hero from 'components/sections/hero/default';
-import { Badge } from 'components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/ui/card';
-import { Separator } from 'components/ui/separator';
-import { ArrowRightIcon, RefreshCwIcon, ShieldCheckIcon, StarIcon, TruckIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { getCollectionProducts } from 'lib/shopify';
+import { X } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export const metadata = {
   description:
@@ -16,218 +12,223 @@ export const metadata = {
   }
 };
 
+// Helper function to get new arrival products
+async function getNewArrivalProducts() {
+  if (!process.env.SHOPIFY_STORE_DOMAIN || !process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
+    return { femaleProduct: null, maleProduct: null };
+  }
+
+  let products: any[] = [];
+  
+  // Try different collection names for new arrivals
+  const collectionNames = ['new-arrivals', 'new', 'latest', 'featured', 'all'];
+  
+  for (const collectionName of collectionNames) {
+    try {
+      products = await getCollectionProducts({ collection: collectionName });
+      if (products.length >= 2) break;
+    } catch (error) {
+      console.log(`Collection "${collectionName}" not found, trying next...`);
+    }
+  }
+
+  // If no products found, return null
+  if (!products.length) {
+    return { femaleProduct: null, maleProduct: null };
+  }
+
+  // Return first two products as female and male models
+  return {
+    femaleProduct: products[0],
+    maleProduct: products[1]
+  };
+}
+
 export default async function HomePage() {
+  // Get new arrival products for hero section
+  const { femaleProduct, maleProduct } = await getNewArrivalProducts();
+
   return (
-    <>
-      <Hero
-        title="Welcome to Next.js Commerce"
-        description="A modern e-commerce store built with Next.js, Shopify, and shadcn/ui. Discover beautiful products with seamless shopping experience."
-        badge={
-          <Badge variant="outline" className="animate-appear">
-            <span className="text-muted-foreground">
-              Built with Next.js & Shopify
-            </span>
-            <a href="/demo" className="flex items-center gap-1">
-              View Demo
-              <ArrowRightIcon className="size-3" />
-            </a>
-          </Badge>
-        }
-        buttons={[
-          {
-            href: "/search",
-            text: "Shop Now",
-            variant: "default",
-          },
-          {
-            href: "/demo",
-            text: "View Demo",
-            variant: "outline",
-          },
-        ]}
-        mockup={false}
-      />
-
-      {/* Featured Products Section */}
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-3">Featured Products</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Discover our most popular products
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Top Banner - FINAL CLEARANCE */}
+      <div className="bg-black text-white py-2 px-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <p className="text-sm font-medium">
+            FINAL CLEARANCE: Take 20% off 'Sale Must-Haves'
           </p>
+          <button className="text-white hover:text-gray-300">
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <FeaturedCollection 
-          collectionHandle="featured"
-          title=""
-          description=""
-          maxProducts={6}
-          variant="featured"
-        />
-      </section>
+      </div>
 
-      <Separator className="mx-auto max-w-7xl" />
-
-      {/* Features Section */}
-      <section className="mx-auto max-w-7xl px-4 py-12">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-3">Why Choose Our Store?</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Experience the future of online shopping with our modern, fast, and secure e-commerce platform.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="text-center border-0 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 group">
-            <CardHeader className="pb-3">
-              <div className="mx-auto w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                <TruckIcon className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-              </div>
-              <CardTitle className="text-base">Fast Shipping</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-sm">
-                Free shipping on orders over $50. Get your products delivered quickly and safely.
-              </CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center border-0 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 group">
-            <CardHeader className="pb-3">
-              <div className="mx-auto w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                <ShieldCheckIcon className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-              </div>
-              <CardTitle className="text-base">Secure Shopping</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-sm">
-                Your data is protected with industry-leading security and encryption standards.
-              </CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center border-0 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 group">
-            <CardHeader className="pb-3">
-              <div className="mx-auto w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                <RefreshCwIcon className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-              </div>
-              <CardTitle className="text-base">Easy Returns</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-sm">
-                30-day return policy. Not satisfied? Return your purchase hassle-free.
-              </CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center border-0 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 group">
-            <CardHeader className="pb-3">
-              <div className="mx-auto w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                <StarIcon className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-              </div>
-              <CardTitle className="text-base">Premium Quality</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-sm">
-                Curated selection of high-quality products from trusted brands worldwide.
-              </CardDescription>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <CTA
-        title="Ready to Start Shopping?"
-        buttons={[
-          {
-            href: "/search",
-            text: "Browse Products",
-            variant: "default",
-          },
-          {
-            href: "/demo",
-            text: "View Demo",
-            variant: "outline",
-          },
-        ]}
-      />
-
-      <Separator className="mx-auto max-w-7xl" />
-
-      {/* Testimonials Section */}
-      <section className="mx-auto max-w-7xl px-4 py-12">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-3">What Our Customers Say</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Don't just take our word for it. Here's what our satisfied customers have to say.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="pt-4">
-              <div className="flex items-center mb-3">
-                {[...Array(5)].map((_, i) => (
-                  <StarIcon key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <p className="text-muted-foreground mb-3 text-sm">
-                "Amazing shopping experience! The website is fast, easy to navigate, and the products are exactly as described."
-              </p>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-muted rounded-full mr-3"></div>
-                <div>
-                  <p className="font-semibold text-sm">Sarah Johnson</p>
-                  <p className="text-xs text-muted-foreground">Verified Customer</p>
+      {/* Hero Section - NEW SEASON */}
+      <section className="bg-gray-100 py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+            {/* Left Model - Female Product */}
+            <div className="relative group cursor-pointer">
+              <Link href={femaleProduct ? `/product/${femaleProduct.handle}` : '#'}>
+                <div className="aspect-[3/4] bg-gray-200 rounded-lg overflow-hidden">
+                  {femaleProduct?.featuredImage?.url ? (
+                    <Image
+                      src={femaleProduct.featuredImage.url}
+                      alt={femaleProduct.featuredImage.altText || femaleProduct.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                      <div className="text-center text-gray-500">
+                        <div className="text-4xl mb-2">👗</div>
+                        <p className="text-sm">Female Model</p>
+                        <p className="text-xs opacity-80">Black Denim Jacket, Red Mini-Skirt</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                  <div className="absolute bottom-4 left-4 text-white">
+                    {femaleProduct ? (
+                      <>
+                        <p className="text-sm font-medium">{femaleProduct.title}</p>
+                        <p className="text-xs opacity-80">
+                          ${parseFloat(femaleProduct.priceRange.maxVariantPrice.amount).toFixed(2)}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm">Female Model</p>
+                        <p className="text-xs opacity-80">Black Denim Jacket, Red Mini-Skirt</p>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </Link>
+            </div>
 
-          <Card className="border-0 shadow-sm">
-            <CardContent className="pt-4">
-              <div className="flex items-center mb-3">
-                {[...Array(5)].map((_, i) => (
-                  <StarIcon key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                ))}
+            {/* Center Content */}
+            <div className="text-center space-y-6">
+              <div className="space-y-2">
+                <h1 className="text-6xl font-bold text-black leading-none">
+                  NEW<br />SEASON
+                </h1>
+                <p className="text-lg text-gray-600">
+                  New arrivals are here!
+                </p>
               </div>
-              <p className="text-muted-foreground mb-3 text-sm">
-                "Fast delivery and excellent customer service. I love how easy it is to find what I'm looking for."
-              </p>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-muted rounded-full mr-3"></div>
-                <div>
-                  <p className="font-semibold text-sm">Mike Chen</p>
-                  <p className="text-xs text-muted-foreground">Verified Customer</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="border-black text-white bg-black hover:bg-gray-800 hover:text-white transition-colors"
+                asChild
+              >
+                <Link href="/search?collection=new-arrivals">
+                  DISCOVER MORE
+                </Link>
+              </Button>
+            </div>
 
-          <Card className="border-0 shadow-sm">
-            <CardContent className="pt-4">
-              <div className="flex items-center mb-3">
-                {[...Array(5)].map((_, i) => (
-                  <StarIcon key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <p className="text-muted-foreground mb-3 text-sm">
-                "The quality of products is outstanding. Will definitely shop here again!"
-              </p>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-muted rounded-full mr-3"></div>
-                <div>
-                  <p className="font-semibold text-sm">Emily Rodriguez</p>
-                  <p className="text-xs text-muted-foreground">Verified Customer</p>
+            {/* Right Model - Male Product */}
+            <div className="relative group cursor-pointer">
+              <Link href={maleProduct ? `/product/${maleProduct.handle}` : '#'}>
+                <div className="aspect-[3/4] bg-gray-200 rounded-lg overflow-hidden">
+                  {maleProduct?.featuredImage?.url ? (
+                    <Image
+                      src={maleProduct.featuredImage.url}
+                      alt={maleProduct.featuredImage.altText || maleProduct.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                      <div className="text-center text-gray-500">
+                        <div className="text-4xl mb-2">👔</div>
+                        <p className="text-sm">Male Model</p>
+                        <p className="text-xs opacity-80">Patterned Shirt, Denim Shorts</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                  <div className="absolute bottom-4 left-4 text-white">
+                    {maleProduct ? (
+                      <>
+                        <p className="text-sm font-medium">{maleProduct.title}</p>
+                        <p className="text-xs opacity-80">
+                          ${parseFloat(maleProduct.priceRange.maxVariantPrice.amount).toFixed(2)}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm">Male Model</p>
+                        <p className="text-xs opacity-80">Patterned Shirt, Denim Shorts</p>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
-      <ThreeItemGrid />
-      <Carousel />
-    </>
+      {/* Product Categories */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Shop by Category</h2>
+            <p className="text-gray-600">Explore our curated collections</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* T-SHIRTS */}
+            <div className="group cursor-pointer">
+              <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
+                <div className="absolute bottom-4 left-4 text-white">
+                  <p className="text-sm font-medium">"IN THIS GAME OF LIFE, JUST KEEP PLAYING"</p>
+                </div>
+              </div>
+              <h3 className="text-xl font-bold mb-2">T-SHIRTS</h3>
+              <p className="text-red-600 font-medium">Get up to 20% off</p>
+            </div>
+
+            {/* JEANS */}
+            <div className="group cursor-pointer">
+              <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
+                <div className="absolute bottom-4 left-4 text-white">
+                  <p className="text-sm font-medium">"WHEN I IMAGINE MYU ON VACAY"</p>
+                  <p className="text-xs opacity-80">"THINK IT OVER"</p>
+                </div>
+              </div>
+              <h3 className="text-xl font-bold mb-2">JEANS</h3>
+              <p className="text-red-600 font-medium">Get up to 20% off</p>
+            </div>
+
+            {/* ACCESSORIES */}
+            <div className="group cursor-pointer">
+              <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
+                <div className="absolute bottom-4 left-4 text-white">
+                  <p className="text-sm font-medium">Mini Backpack, Baseball Cap</p>
+                  <p className="text-xs opacity-80">Smartphone Case</p>
+                </div>
+              </div>
+              <h3 className="text-xl font-bold mb-2">ACCESSORIES</h3>
+              <p className="text-red-600 font-medium">Get up to 20% off</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+
+      {/* Floating Settings Icon */}
+      <div className="fixed bottom-8 right-8 z-50">
+        <button className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow">
+          <div className="w-6 h-6 bg-black rounded"></div>
+        </button>
+      </div>
+    </div>
   );
 }
+

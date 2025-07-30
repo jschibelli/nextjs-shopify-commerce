@@ -23,14 +23,12 @@ export async function Carousel() {
   // Check if environment variables are set
   if (!process.env.SHOPIFY_STORE_DOMAIN || !process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
     return (
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        <div className="text-center">
-          <h3 className="text-lg font-semibold mb-2">Featured Products Carousel</h3>
-          <p className="text-gray-600 text-sm">
-            Configure your Shopify environment variables to display products here.
-          </p>
-        </div>
-      </section>
+      <div className="text-center py-8">
+        <h3 className="text-lg font-semibold mb-2">Featured Products Carousel</h3>
+        <p className="text-gray-600 text-sm">
+          Configure your Shopify environment variables to display products here.
+        </p>
+      </div>
     );
   }
 
@@ -112,11 +110,11 @@ export async function Carousel() {
       },
       {
         id: "demo-4",
-        title: "Wireless Bluetooth Speaker",
-        handle: "wireless-bluetooth-speaker",
+        title: "Wireless Earbuds",
+        handle: "wireless-earbuds",
         featuredImage: {
-          url: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&h=400&fit=crop",
-          altText: "Wireless Bluetooth Speaker"
+          url: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&h=400&fit=crop",
+          altText: "Wireless Earbuds"
         },
         priceRange: {
           maxVariantPrice: {
@@ -124,37 +122,87 @@ export async function Carousel() {
             currencyCode: "USD"
           }
         }
+      },
+      {
+        id: "demo-5",
+        title: "Smart Speaker",
+        handle: "smart-speaker",
+        featuredImage: {
+          url: "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=400&h=400&fit=crop",
+          altText: "Smart Speaker"
+        },
+        priceRange: {
+          maxVariantPrice: {
+            amount: "89.99",
+            currencyCode: "USD"
+          }
+        }
+      },
+      {
+        id: "demo-6",
+        title: "Gaming Console",
+        handle: "gaming-console",
+        featuredImage: {
+          url: "https://images.unsplash.com/photo-1486401899868-0e435ed85128?w=400&h=400&fit=crop",
+          altText: "Gaming Console"
+        },
+        priceRange: {
+          maxVariantPrice: {
+            amount: "399.99",
+            currencyCode: "USD"
+          }
+        }
       }
     ];
   }
 
-  // Purposefully duplicating products to make the carousel loop and not run out of products on wide screens.
-  const carouselProducts = [...products, ...products, ...products];
+  if (!products?.length) {
+    return (
+      <div className="text-center py-8">
+        <h3 className="text-lg font-semibold mb-2">No Products Found</h3>
+        <p className="text-gray-600 text-sm">
+          Add products to your Shopify store to see them here.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full overflow-x-auto pb-6 pt-1">
-      <ul className="flex animate-carousel gap-4">
-        {carouselProducts.map((product, i) => (
-          <li
-            key={`${product.handle}${i}`}
-            className="relative aspect-square h-[30vh] max-h-[275px] w-2/3 max-w-[475px] flex-none md:w-1/3"
-          >
-            <Link href={`/product/${product.handle}`} className="relative h-full w-full">
+    <div className="relative">
+      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+        {products.map((product) => (
+          <div key={product.id} className="flex-none w-64 group">
+            <Link
+              className="relative block aspect-square w-full"
+              href={`/product/${product.handle}`}
+              prefetch={true}
+            >
               <GridTileImage
-                alt={product.title}
+                src={product.featuredImage?.url || '/placeholder-product.jpg'}
+                fill
+                sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+                alt={product.featuredImage?.altText || product.title}
                 label={{
+                  position: 'bottom',
                   title: product.title,
                   amount: product.priceRange.maxVariantPrice.amount,
                   currencyCode: product.priceRange.maxVariantPrice.currencyCode
                 }}
-                src={product.featuredImage?.url}
-                fill
-                sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
               />
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
             </Link>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
+      
+      {/* Scroll indicators */}
+      <div className="flex justify-center mt-4 space-x-2">
+        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+      </div>
     </div>
   );
 }

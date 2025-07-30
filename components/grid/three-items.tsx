@@ -17,7 +17,7 @@ function ThreeItemGridItem({
       className={size === 'full' ? 'md:col-span-4 md:row-span-2' : 'md:col-span-2 md:row-span-1'}
     >
       <Link
-        className="relative block aspect-square h-full w-full"
+        className="relative block aspect-square h-full w-full group"
         href={`/product/${item.handle}`}
         prefetch={true}
       >
@@ -36,6 +36,8 @@ function ThreeItemGridItem({
             currencyCode: item.priceRange.maxVariantPrice.currencyCode
           }}
         />
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
       </Link>
     </div>
   );
@@ -69,25 +71,23 @@ export async function ThreeItemGrid() {
   // Check if environment variables are set
   if (!process.env.SHOPIFY_STORE_DOMAIN || !process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
     return (
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Welcome to Next.js Commerce</h2>
-          <p className="text-gray-600 mb-4">
-            To display products, you need to configure your Shopify environment variables.
+      <div className="text-center py-8">
+        <h3 className="text-lg font-semibold mb-2">Welcome to Next.js Commerce</h3>
+        <p className="text-gray-600 mb-4">
+          To display products, you need to configure your Shopify environment variables.
+        </p>
+        <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg text-left max-w-md mx-auto">
+          <h4 className="font-semibold text-primary mb-2">Required Environment Variables:</h4>
+          <ul className="text-sm text-primary/80 space-y-1">
+            <li>• <code className="bg-primary/10 px-1 rounded">SHOPIFY_STORE_DOMAIN</code></li>
+            <li>• <code className="bg-primary/10 px-1 rounded">SHOPIFY_STOREFRONT_ACCESS_TOKEN</code></li>
+            <li>• <code className="bg-primary/10 px-1 rounded">SHOPIFY_REVALIDATION_SECRET</code></li>
+          </ul>
+          <p className="text-xs text-primary/80 mt-3">
+            Create a <code className="bg-primary/10 px-1 rounded">.env</code> file in your project root with these variables.
           </p>
-          <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg text-left max-w-md mx-auto">
-            <h3 className="font-semibold text-primary mb-2">Required Environment Variables:</h3>
-            <ul className="text-sm text-primary/80 space-y-1">
-              <li>• <code className="bg-primary/10 px-1 rounded">SHOPIFY_STORE_DOMAIN</code></li>
-              <li>• <code className="bg-primary/10 px-1 rounded">SHOPIFY_STOREFRONT_ACCESS_TOKEN</code></li>
-              <li>• <code className="bg-primary/10 px-1 rounded">SHOPIFY_REVALIDATION_SECRET</code></li>
-            </ul>
-            <p className="text-xs text-primary/80 mt-3">
-              Create a <code className="bg-primary/10 px-1 rounded">.env</code> file in your project root with these variables.
-            </p>
-          </div>
         </div>
-      </section>
+      </div>
     );
   }
 
@@ -190,22 +190,20 @@ export async function ThreeItemGrid() {
   // Ensure we have all three products before rendering
   if (!firstProduct || !secondProduct || !thirdProduct) {
     return (
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Welcome to Your Store</h2>
-          <p className="text-gray-600 mb-4">
-            No featured products found. Add products to your Shopify store to see them here.
-          </p>
-        </div>
-      </section>
+      <div className="text-center py-8">
+        <h3 className="text-lg font-semibold mb-2">Welcome to Your Store</h3>
+        <p className="text-gray-600 mb-4">
+          No featured products found. Add products to your Shopify store to see them here.
+        </p>
+      </div>
     );
   }
 
   return (
-    <section className="mx-auto grid max-w-(--breakpoint-2xl) gap-4 px-4 pb-4 md:grid-cols-6 md:grid-rows-2 lg:max-h-[calc(100vh-200px)]">
+    <div className="grid grid-cols-1 md:grid-cols-6 md:grid-rows-2 gap-4 max-w-7xl mx-auto">
       <ThreeItemGridItem size="full" item={firstProduct} priority={true} />
       <ThreeItemGridItem size="half" item={secondProduct} priority={true} />
       <ThreeItemGridItem size="half" item={thirdProduct} />
-    </section>
+    </div>
   );
 }

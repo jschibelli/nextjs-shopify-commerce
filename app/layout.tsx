@@ -1,40 +1,73 @@
+import { GeistSans } from 'geist/font/sans';
+import type { Metadata } from 'next';
+
 import { CartProvider } from 'components/cart/cart-context';
+import CartModal from 'components/cart/modal';
 import DevRevalidateButton from 'components/dev-revalidate-button';
-import { Navbar } from 'components/layout/navbar';
+import Footer from 'components/layout/footer';
+import Navbar from 'components/layout/navbar';
 import { ThemeProvider } from 'components/theme-provider';
 import { WelcomeToast } from 'components/welcome-toast';
-import { GeistSans } from 'geist/font/sans';
 import { getCart } from 'lib/shopify';
-import { baseUrl } from 'lib/utils';
-import { ReactNode } from 'react';
 import { Toaster } from 'sonner';
+
 import './globals.css';
 
-const { SITE_NAME } = process.env;
-
-export const metadata = {
-  metadataBase: new URL(baseUrl),
+export const metadata: Metadata = {
   title: {
-    default: SITE_NAME!,
-    template: `%s | ${SITE_NAME}`
+    default: 'Next.js Commerce',
+    template: '%s | Next.js Commerce'
+  },
+  description: 'High-performance ecommerce store built with Next.js, Vercel, and Shopify.',
+  keywords: ['Next.js', 'React', 'JavaScript', 'Shopify', 'Commerce'],
+  authors: [
+    {
+      name: 'Vercel',
+      url: 'https://vercel.com'
+    }
+  ],
+  creator: 'Vercel',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://nextjs-commerce.vercel.app',
+    title: 'Next.js Commerce',
+    description: 'High-performance ecommerce store built with Next.js, Vercel, and Shopify.',
+    siteName: 'Next.js Commerce'
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Next.js Commerce',
+    description: 'High-performance ecommerce store built with Next.js, Vercel, and Shopify.',
+    images: ['https://nextjs-commerce.vercel.app/og.png']
   },
   robots: {
+    index: true,
     follow: true,
-    index: true
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1
+    }
+  },
+  verification: {
+    google: 'google-site-verification-code'
   }
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children
 }: {
-  children: ReactNode;
+  children: React.ReactNode;
 }) {
   // Don't await the fetch, pass the Promise to the context provider
   const cart = getCart();
 
   return (
-    <html lang="en" className={GeistSans.variable} suppressHydrationWarning>
-      <body className="bg-neutral-50 text-black selection:bg-teal-300 dark:bg-neutral-900 dark:text-white dark:selection:bg-pink-500 dark:selection:text-white">
+    <html lang="en" className={GeistSans.variable}>
+      <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -42,13 +75,17 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <CartProvider cartPromise={cart}>
-            <Navbar />
-            <main>
-              {children}
-              <Toaster closeButton />
-              <WelcomeToast />
-              <DevRevalidateButton />
-            </main>
+            <div className="flex min-h-screen flex-col">
+              <Navbar />
+              <main className="flex-1">
+                {children}
+              </main>
+              <Footer />
+            </div>
+            <CartModal />
+            <WelcomeToast />
+            <DevRevalidateButton />
+            <Toaster closeButton />
           </CartProvider>
         </ThemeProvider>
       </body>

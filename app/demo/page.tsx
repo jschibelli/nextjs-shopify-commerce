@@ -258,10 +258,10 @@ export default async function DemoPage() {
 
       {/* Compact Products Section */}
       <section className="mb-12">
-        <h2 className="text-2xl font-semibold mb-6">Compact View</h2>
+        <h2 className="text-2xl font-semibold mb-6">Grid View</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {demoProducts.map((product) => (
-            <ProductCard key={product.id} product={product} variant="compact" />
+            <ProductCard key={product.id} product={product} variant="default" />
           ))}
         </div>
       </section>
