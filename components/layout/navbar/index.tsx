@@ -4,6 +4,7 @@ import { Heart, HelpCircle, Menu, Search, ShoppingBag, User, X } from 'lucide-re
 import Link from 'next/link';
 import { useState } from 'react';
 
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -86,8 +87,10 @@ export default function Navbar() {
               <Button variant="ghost" size="icon">
                 <HelpCircle className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/account">
+                  <User className="h-5 w-5" />
+                </Link>
               </Button>
               <Button variant="ghost" size="icon">
                 <Heart className="h-5 w-5" />
@@ -98,6 +101,7 @@ export default function Navbar() {
                   <span className="text-xs ml-1">Bag (0)</span>
                 </Link>
               </Button>
+              <ThemeToggle />
             </div>
           </div>
 
@@ -160,8 +164,10 @@ export default function Navbar() {
               <Button variant="ghost" size="icon">
                 <HelpCircle className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/account">
+                  <User className="h-5 w-5" />
+                </Link>
               </Button>
               <Button variant="ghost" size="icon">
                 <Heart className="h-5 w-5" />
@@ -172,6 +178,7 @@ export default function Navbar() {
                   <span className="text-xs ml-1">Bag (0)</span>
                 </Link>
               </Button>
+              <ThemeToggle />
             </div>
           </div>
         </div>

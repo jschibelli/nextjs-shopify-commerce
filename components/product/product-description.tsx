@@ -2,6 +2,7 @@ import { AddToCart } from 'components/cart/add-to-cart';
 import Price from 'components/price';
 import Prose from 'components/prose';
 import { Product } from 'lib/shopify/types';
+import { AddToWishlist } from './add-to-wishlist';
 import { VariantSelector } from './variant-selector';
 
 export function ProductDescription({ product }: { product: Product }) {
@@ -23,7 +24,10 @@ export function ProductDescription({ product }: { product: Product }) {
           html={product.descriptionHtml}
         />
       ) : null}
-      <AddToCart product={product} />
+      <div className="space-y-4">
+        <AddToCart product={product} />
+        <AddToWishlist product={product} />
+      </div>
     </>
   );
 }

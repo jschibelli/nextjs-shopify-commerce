@@ -270,3 +270,188 @@ export type ShopifyProductsOperation = {
     sortKey?: string;
   };
 };
+
+// Customer types
+export type Customer = {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  phone?: string;
+  acceptsMarketing: boolean;
+  acceptsSMS?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  defaultAddress?: CustomerAddress;
+  addresses: CustomerAddress[];
+  orders: CustomerOrder[];
+};
+
+export type CustomerAddress = {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  province?: string;
+  country?: string;
+  zip?: string;
+  phone?: string;
+};
+
+export type CustomerOrder = {
+  id: string;
+  name: string;
+  processedAt: string;
+  fulfillmentStatus: string;
+  financialStatus: string;
+  totalPriceSet: {
+    shopMoney: Money;
+  };
+  lineItems: CustomerOrderLineItem[];
+};
+
+export type CustomerOrderLineItem = {
+  id: string;
+  title: string;
+  quantity: number;
+  variant: {
+    id: string;
+    title: string;
+    price: Money;
+    product: {
+      id: string;
+      title: string;
+      handle: string;
+      featuredImage?: Image;
+    };
+  };
+};
+
+export type CustomerAccessToken = {
+  accessToken: string;
+  expiresAt: string;
+};
+
+export type ShopifyCustomer = {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  phone?: string;
+  acceptsMarketing: boolean;
+  acceptsSMS?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  defaultAddress?: CustomerAddress;
+  addresses: Connection<CustomerAddress>;
+  orders: Connection<CustomerOrder>;
+};
+
+export type ShopifyCustomerCreateOperation = {
+  data: {
+    customerCreate: {
+      customer: ShopifyCustomer;
+      customerUserErrors: {
+        code: string;
+        field: string[];
+        message: string;
+      }[];
+    };
+  };
+  variables: {
+    input: {
+      firstName?: string;
+      lastName?: string;
+      email: string;
+      password: string;
+      phone?: string;
+      acceptsMarketing?: boolean;
+    };
+  };
+};
+
+export type ShopifyCustomerAccessTokenCreateOperation = {
+  data: {
+    customerAccessTokenCreate: {
+      customerAccessToken: CustomerAccessToken;
+      customerUserErrors: {
+        code: string;
+        field: string[];
+        message: string;
+      }[];
+    };
+  };
+  variables: {
+    input: {
+      email: string;
+      password: string;
+    };
+  };
+};
+
+export type ShopifyCustomerAccessTokenDeleteOperation = {
+  data: {
+    customerAccessTokenDelete: {
+      deletedAccessToken: string;
+      deletedCustomerAccessTokenId: string;
+      userErrors: {
+        code: string;
+        field: string[];
+        message: string;
+      }[];
+    };
+  };
+  variables: {
+    customerAccessToken: string;
+  };
+};
+
+export type ShopifyCustomerOperation = {
+  data: {
+    customer: ShopifyCustomer;
+  };
+  variables: {
+    customerAccessToken: string;
+  };
+};
+
+export type ShopifyCustomerUpdateOperation = {
+  data: {
+    customerUpdate: {
+      customer: ShopifyCustomer;
+      customerUserErrors: {
+        code: string;
+        field: string[];
+        message: string;
+      }[];
+    };
+  };
+  variables: {
+    customer: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      phone?: string;
+      acceptsMarketing?: boolean;
+    };
+    customerAccessToken: string;
+  };
+};
+
+export type ShopifyCustomerRecoverOperation = {
+  data: {
+    customerRecover: {
+      customerUserErrors: {
+        code: string;
+        field: string[];
+        message: string;
+      }[];
+    };
+  };
+  variables: {
+    email: string;
+  };
+};

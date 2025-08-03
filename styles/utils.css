@@ -14,6 +14,37 @@
   @apply border-border border-b-input from-card/100 to-card/20 dark:border-border/10 dark:border-t-border/30 dark:from-primary/15 dark:to-primary/5 border bg-linear-to-b dark:border-b-0;
 }
 
+/* Theme-aware utilities */
+@utility theme-transition {
+  @apply transition-colors duration-200 ease-in-out;
+}
+
+@utility theme-hover {
+  @apply hover:bg-accent hover:text-accent-foreground theme-transition;
+}
+
+@utility theme-focus {
+  @apply focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
+}
+
+@utility theme-card {
+  @apply bg-card text-card-foreground border border-border rounded-lg shadow-sm;
+}
+
+@utility theme-elevated {
+  @apply bg-card text-card-foreground border border-border rounded-lg shadow-md dark:shadow-lg;
+}
+
+@utility theme-glow {
+  @apply shadow-lg dark:shadow-xl;
+  box-shadow: 0 0 20px rgba(var(--primary), 0.1);
+}
+
+@utility theme-glow-strong {
+  @apply shadow-xl dark:shadow-2xl;
+  box-shadow: 0 0 30px rgba(var(--primary), 0.2);
+}
+
 /* Fade effects */
 @utility fade-x {
   mask-image: linear-gradient(
