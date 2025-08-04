@@ -455,3 +455,27 @@ export type ShopifyCustomerRecoverOperation = {
     email: string;
   };
 };
+
+export type ShopifyCustomerOrdersOperation = {
+  data: {
+    customer: {
+      orders: Connection<CustomerOrder>;
+    };
+  };
+  variables: {
+    customerAccessToken: string;
+    first: number;
+  };
+};
+
+export type ShopifyOrderOperation = {
+  data: {
+    customer: {
+      order: CustomerOrder | null;
+    };
+  };
+  variables: {
+    customerAccessToken: string;
+    orderId: string;
+  };
+};

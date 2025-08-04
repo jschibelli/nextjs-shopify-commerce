@@ -1,4 +1,4 @@
-import { deleteCustomerAccessToken, getCustomer } from 'lib/shopify';
+import { deleteCustomerAccessToken, getCustomer, getCustomerOrders, getOrder } from 'lib/shopify';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -78,12 +78,28 @@ export class CustomerAccountAuth {
     }
 
     try {
-      // This would need to be implemented with Shopify's order API
-      // For now, return empty array
-      return [];
+      const orders = await getCustomerOrders(this.token.access_token, 50);
+      return orders;
     } catch (error) {
       console.error('Error getting customer orders:', error);
       return [];
+    }
+  }
+
+  // Get a specific order
+  async getOrder(orderId: string): Promise<any | null> {
+    await this.initializeFromCookies();
+    
+    if (!this.token) {
+      return null;
+    }
+
+    try {
+      const order = await getOrder(this.token.access_token, orderId);
+      return order;
+    } catch (error) {
+      console.error('Error getting order:', error);
+      return null;
     }
   }
 

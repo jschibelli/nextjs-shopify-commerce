@@ -61,9 +61,11 @@ import {
   ShopifyCustomerAccessTokenDeleteOperation,
   ShopifyCustomerCreateOperation,
   ShopifyCustomerOperation,
+  ShopifyCustomerOrdersOperation,
   ShopifyCustomerRecoverOperation,
   ShopifyCustomerUpdateOperation,
   ShopifyMenuOperation,
+  ShopifyOrderOperation,
   ShopifyPageOperation,
   ShopifyPagesOperation,
   ShopifyProduct,
@@ -1268,4 +1270,38 @@ export async function deleteCustomerWithAdminAPI(customerId: string): Promise<vo
   }
 
   console.log('Customer deleted successfully:', numericCustomerId);
+}
+
+export async function getCustomerOrders(
+  customerAccessToken: string,
+  first: number = 10
+): Promise<any[]> {
+  const res = await shopifyFetch<ShopifyCustomerOrdersOperation>({
+    query: getCustomerOrdersQuery,
+    variables: {
+      customerAccessToken,
+      first
+    }
+  });
+
+  if (!res.body.data?.customer?.orders?.edges) {
+    return [];
+  }
+
+  return res.body.data.customer.orders.edges.map((edge) => edge.node);
+}
+
+export async function getOrder(
+  customerAccessToken: string,
+  orderId: string
+): Promise<any | null> {
+  const res = await shopifyFetch<ShopifyOrderOperation>({
+    query: getOrderQuery,
+    variables: {
+      customerAccessToken,
+      orderId
+    }
+  });
+
+  return res.body.data?.customer?.order || null;
 }
