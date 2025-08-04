@@ -2,22 +2,44 @@
 
 import { Heart, HelpCircle, Menu, Search, ShoppingBag, User, X } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useCart } from '@/components/cart/cart-context';
 import CartModal from '@/components/cart/modal';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import WishlistModal from '@/components/wishlist/wishlist-modal';
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const { cart } = useCart();
 
   const openCart = () => setIsCartOpen(true);
   const closeCart = () => setIsCartOpen(false);
+  const openWishlist = () => setIsWishlistOpen(true);
+  const closeWishlist = () => setIsWishlistOpen(false);
+
+  // Fetch wishlist count on component mount
+  useEffect(() => {
+    const fetchWishlistCount = async () => {
+      try {
+        const response = await fetch('/api/account/wishlist');
+        if (response.ok) {
+          const data = await response.json();
+          setWishlistCount(data.wishlistItems?.length || 0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch wishlist count:', error);
+      }
+    };
+
+    fetchWishlistCount();
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -99,8 +121,16 @@ export default function Navbar() {
                   <User className="h-5 w-5" />
                 </Link>
               </Button>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="relative" onClick={openWishlist}>
                 <Heart className="h-5 w-5" />
+                {wishlistCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
+                  >
+                    {wishlistCount}
+                  </Badge>
+                )}
               </Button>
               <Button variant="ghost" size="icon" className="relative" onClick={openCart}>
                 <ShoppingBag className="h-5 w-5" />
@@ -181,8 +211,16 @@ export default function Navbar() {
                   <User className="h-5 w-5" />
                 </Link>
               </Button>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="relative" onClick={openWishlist}>
                 <Heart className="h-5 w-5" />
+                {wishlistCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
+                  >
+                    {wishlistCount}
+                  </Badge>
+                )}
               </Button>
               <Button variant="ghost" size="icon" className="relative" onClick={openCart}>
                 <ShoppingBag className="h-5 w-5" />
@@ -203,6 +241,13 @@ export default function Navbar() {
 
       {/* Cart Modal */}
       <CartModal isOpen={isCartOpen} onClose={closeCart} />
+      
+      {/* Wishlist Modal */}
+      <WishlistModal 
+        isOpen={isWishlistOpen} 
+        onClose={closeWishlist} 
+        onWishlistUpdate={setWishlistCount}
+      />
     </header>
   );
 }

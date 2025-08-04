@@ -15,7 +15,6 @@ import { createCartAndSetCookie, redirectToCheckout } from './actions';
 import { useCart } from './cart-context';
 import { DeleteItemButton } from './delete-item-button';
 import { EditItemQuantityButton } from './edit-item-quantity-button';
-import OpenCart from './open-cart';
 
 type MerchandiseSearchParams = {
   [key: string]: string;
@@ -59,11 +58,6 @@ export default function CartModal({ isOpen: externalIsOpen, onClose: externalOnC
 
   return (
     <>
-      {!externalIsOpen && (
-        <button aria-label="Open cart" onClick={openCart}>
-          <OpenCart quantity={cart?.totalQuantity} />
-        </button>
-      )}
       <Transition show={isOpen}>
         <Dialog onClose={closeCart} className="relative z-50">
           <Transition.Child

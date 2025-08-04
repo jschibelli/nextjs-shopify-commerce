@@ -5,7 +5,12 @@ import { Product } from 'lib/shopify/types';
 import { AddToWishlist } from './add-to-wishlist';
 import { VariantSelector } from './variant-selector';
 
-export function ProductDescription({ product }: { product: Product }) {
+interface ProductDescriptionProps {
+  product: Product;
+  onWishlistUpdate?: (count: number) => void;
+}
+
+export function ProductDescription({ product, onWishlistUpdate }: ProductDescriptionProps) {
   return (
     <>
       <div className="mb-6 flex flex-col border-b pb-6 dark:border-neutral-700">
@@ -26,7 +31,7 @@ export function ProductDescription({ product }: { product: Product }) {
       ) : null}
       <div className="space-y-4">
         <AddToCart product={product} />
-        <AddToWishlist product={product} />
+        <AddToWishlist product={product} onWishlistUpdate={onWishlistUpdate} />
       </div>
     </>
   );
