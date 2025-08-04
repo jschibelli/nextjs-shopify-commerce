@@ -34,14 +34,20 @@ export function useSessionActivity() {
             console.log('Session activity: User not authenticated, cleared session ID');
           } else {
             console.error('Failed to update session activity:', response.status);
+            // Don't clear session ID on other errors, just log them
           }
         } else {
-          console.log('Session activity: Updated successfully');
+          const data = await response.json();
+          if (data.success) {
+            console.log('Session activity: Updated successfully');
+          } else {
+            console.log('Session activity: Update skipped -', data.message);
+          }
         }
       } catch (error) {
         console.error('Failed to update session activity:', error);
-        // Clear session ID on error
-        localStorage.removeItem('current_session_id');
+        // Don't clear session ID on network errors, just log them
+        // Only clear on authentication errors (401)
       }
     };
 
@@ -85,12 +91,19 @@ export function useSessionActivity() {
             console.log('Session activity: User not authenticated, cleared session ID');
           } else {
             console.error('Failed to update session activity:', response.status);
+            // Don't clear session ID on other errors
+          }
+        } else {
+          const data = await response.json();
+          if (data.success) {
+            console.log('Session activity: User activity updated');
+          } else {
+            console.log('Session activity: User activity skipped -', data.message);
           }
         }
       } catch (error) {
         console.error('Failed to update session activity:', error);
-        // Clear session ID on error
-        localStorage.removeItem('current_session_id');
+        // Don't clear session ID on network errors, just log them
       }
     };
 

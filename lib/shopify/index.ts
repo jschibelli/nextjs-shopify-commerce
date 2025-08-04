@@ -1,77 +1,77 @@
 import {
-    HIDDEN_PRODUCT_TAG,
-    SHOPIFY_GRAPHQL_API_ENDPOINT,
-    TAGS
+  HIDDEN_PRODUCT_TAG,
+  SHOPIFY_GRAPHQL_API_ENDPOINT,
+  TAGS
 } from 'lib/constants';
 import { isShopifyError } from 'lib/type-guards';
 import { ensureStartsWith } from 'lib/utils';
 import {
-    unstable_cacheLife as cacheLife,
-    unstable_cacheTag as cacheTag,
-    revalidateTag
+  unstable_cacheLife as cacheLife,
+  unstable_cacheTag as cacheTag,
+  revalidateTag
 } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import {
-    addToCartMutation,
-    createCartMutation,
-    editCartItemsMutation,
-    removeFromCartMutation
+  addToCartMutation,
+  createCartMutation,
+  editCartItemsMutation,
+  removeFromCartMutation
 } from './mutations/cart';
 import {
-    customerAccessTokenCreateMutation,
-    customerAccessTokenDeleteMutation,
-    customerCreateMutation,
-    customerRecoverMutation,
-    customerUpdateMutation
+  customerAccessTokenCreateMutation,
+  customerAccessTokenDeleteMutation,
+  customerCreateMutation,
+  customerRecoverMutation,
+  customerUpdateMutation
 } from './mutations/customer';
 import { getCartQuery } from './queries/cart';
 import {
-    getCollectionProductsQuery,
-    getCollectionQuery,
-    getCollectionsQuery
+  getCollectionProductsQuery,
+  getCollectionQuery,
+  getCollectionsQuery
 } from './queries/collection';
 import { getCustomerQuery } from './queries/customer';
 import { getMenuQuery } from './queries/menu';
 import { getPageQuery, getPagesQuery } from './queries/page';
 import {
-    getProductQuery,
-    getProductRecommendationsQuery,
-    getProductsQuery
+  getProductQuery,
+  getProductRecommendationsQuery,
+  getProductsQuery
 } from './queries/product';
 import {
-    Cart,
-    Collection,
-    Connection,
-    Customer,
-    CustomerAccessToken,
-    Image,
-    Menu,
-    Page,
-    Product,
-    ShopifyAddToCartOperation,
-    ShopifyCart,
-    ShopifyCartOperation,
-    ShopifyCollection,
-    ShopifyCollectionOperation,
-    ShopifyCollectionProductsOperation,
-    ShopifyCollectionsOperation,
-    ShopifyCreateCartOperation,
-    ShopifyCustomerAccessTokenCreateOperation,
-    ShopifyCustomerAccessTokenDeleteOperation,
-    ShopifyCustomerCreateOperation,
-    ShopifyCustomerOperation,
-    ShopifyCustomerRecoverOperation,
-    ShopifyCustomerUpdateOperation,
-    ShopifyMenuOperation,
-    ShopifyPageOperation,
-    ShopifyPagesOperation,
-    ShopifyProduct,
-    ShopifyProductOperation,
-    ShopifyProductRecommendationsOperation,
-    ShopifyProductsOperation,
-    ShopifyRemoveFromCartOperation,
-    ShopifyUpdateCartOperation
+  Cart,
+  Collection,
+  Connection,
+  Customer,
+  CustomerAccessToken,
+  Image,
+  Menu,
+  Page,
+  Product,
+  ShopifyAddToCartOperation,
+  ShopifyCart,
+  ShopifyCartOperation,
+  ShopifyCollection,
+  ShopifyCollectionOperation,
+  ShopifyCollectionProductsOperation,
+  ShopifyCollectionsOperation,
+  ShopifyCreateCartOperation,
+  ShopifyCustomerAccessTokenCreateOperation,
+  ShopifyCustomerAccessTokenDeleteOperation,
+  ShopifyCustomerCreateOperation,
+  ShopifyCustomerOperation,
+  ShopifyCustomerRecoverOperation,
+  ShopifyCustomerUpdateOperation,
+  ShopifyMenuOperation,
+  ShopifyPageOperation,
+  ShopifyPagesOperation,
+  ShopifyProduct,
+  ShopifyProductOperation,
+  ShopifyProductRecommendationsOperation,
+  ShopifyProductsOperation,
+  ShopifyRemoveFromCartOperation,
+  ShopifyUpdateCartOperation
 } from './types';
 
 const domain = process.env.SHOPIFY_STORE_DOMAIN
@@ -147,7 +147,7 @@ const reshapeCustomer = (customer: any): Customer => {
     email: customer.email || '',
     phone: customer.phone || undefined,
     acceptsMarketing: customer.acceptsMarketing || false,
-    acceptsSMS: customer.acceptsSMS || customer.sms_marketing_consent?.state === 'subscribed' || false,
+    acceptsSMS: customer.acceptsSMS || false, // Default to false since Storefront API doesn't support SMS
     createdAt: customer.createdAt || new Date().toISOString(),
     updatedAt: customer.updatedAt || new Date().toISOString(),
     defaultAddress: customer.defaultAddress || undefined,
@@ -784,7 +784,7 @@ export async function createCustomerWithAdminAPI({
     email: customer.email,
     phone: customer.phone || undefined,
     acceptsMarketing: customer.accepts_marketing || false,
-    acceptsSMS: customer.sms_marketing_consent?.state === 'subscribed' || false,
+    acceptsSMS: false, // Default to false since SMS marketing requires special setup
     createdAt: customer.created_at,
     updatedAt: customer.updated_at,
     defaultAddress: undefined,
@@ -918,7 +918,7 @@ export async function updateCustomerWithAdminAPI({
     email: customer.email,
     phone: customer.phone || undefined,
     acceptsMarketing: customer.accepts_marketing || false,
-    acceptsSMS: customer.sms_marketing_consent?.state === 'subscribed' || false,
+    acceptsSMS: false, // Default to false since SMS marketing requires special setup
     createdAt: customer.created_at,
     updatedAt: customer.updated_at,
     defaultAddress: undefined,
