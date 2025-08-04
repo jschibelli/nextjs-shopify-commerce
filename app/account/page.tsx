@@ -1,33 +1,33 @@
 import { AccountClientWrapper } from 'components/account-client-wrapper';
 import { getAuth } from 'lib/auth';
+import { getTwoFactorData } from 'lib/security';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
-async function get2FAStatus() {
+async function get2FAStatus(userId: string) {
   try {
-    const cookieStore = await cookies();
-    const tokenCookie = cookieStore.get('customer_token');
+    // Get 2FA data directly from security functions
+    const twoFactorData = getTwoFactorData(userId);
     
-    if (!tokenCookie) {
-      return { twoFactorEnabled: false };
-    }
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/account/security`, {
-      headers: {
-        'Cookie': `customer_token=${tokenCookie.value}`
-      }
+    console.log('2FA Status Check:', {
+      userId,
+      twoFactorData,
+      enabled: twoFactorData?.enabled || false
     });
-
-    if (response.ok) {
-      const data = await response.json();
-      return data.securitySettings || { twoFactorEnabled: false };
-    }
     
-    return { twoFactorEnabled: false };
+    return {
+      twoFactorEnabled: twoFactorData?.enabled || false,
+      twoFactorSecret: twoFactorData?.secret ? 'configured' : null,
+      backupCodes: twoFactorData?.backupCodes?.length || 0
+    };
   } catch (error) {
     console.error('Error fetching 2FA status:', error);
-    return { twoFactorEnabled: false };
+    return { 
+      twoFactorEnabled: false,
+      twoFactorSecret: null,
+      backupCodes: 0
+    };
   }
 }
 
@@ -47,8 +47,8 @@ async function AccountDashboard() {
     redirect('/login');
   }
 
-  // Fetch 2FA status
-  const securitySettings = await get2FAStatus();
+  // Fetch 2FA status directly using security functions
+  const securitySettings = await get2FAStatus(user.id);
 
   return (
     <AccountClientWrapper>
