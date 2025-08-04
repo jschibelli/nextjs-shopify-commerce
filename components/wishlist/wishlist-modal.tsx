@@ -17,7 +17,7 @@ interface WishlistModalProps {
 
 export default function WishlistModal({ isOpen: externalIsOpen, onClose: externalOnClose }: WishlistModalProps = {}) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
-  const { wishlistItems, removeFromWishlist, isLoading } = useWishlist();
+  const { wishlistItems, removeFromWishlist, isLoading, isAuthenticated } = useWishlist();
   
   // Use external state if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -76,6 +76,21 @@ export default function WishlistModal({ isOpen: externalIsOpen, onClose: externa
                 <div className="mt-20 flex w-full flex-col items-center justify-center overflow-hidden">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
                   <p className="mt-4 text-center text-sm">Loading wishlist...</p>
+                </div>
+              ) : !isAuthenticated ? (
+                <div className="mt-20 flex w-full flex-col items-center justify-center overflow-hidden">
+                  <Heart className="h-16 text-muted-foreground" />
+                  <p className="mt-6 text-center text-2xl font-bold">
+                    Please log in to view your wishlist.
+                  </p>
+                  <p className="mt-2 text-center text-sm text-muted-foreground">
+                    Your wishlist items will be saved to your account.
+                  </p>
+                  <Link href="/login" onClick={closeWishlist}>
+                    <Button className="mt-4">
+                      Log In
+                    </Button>
+                  </Link>
                 </div>
               ) : !wishlistItems || wishlistItems.length === 0 ? (
                 <div className="mt-20 flex w-full flex-col items-center justify-center overflow-hidden">
