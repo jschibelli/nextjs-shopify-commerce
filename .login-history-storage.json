@@ -1,0 +1,59 @@
+{
+  "gid://shopify/Customer/8320122093801": [
+    {
+      "id": "login_1754185030285_2dq32zet3",
+      "userId": "gid://shopify/Customer/8320122093801",
+      "timestamp": "2025-08-03T01:37:10.285Z",
+      "type": "success",
+      "device": "Windows PC",
+      "location": "Unknown Location",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0",
+      "details": "Login successful with 2FA"
+    },
+    {
+      "id": "login_1754185028637_4mmx70k59",
+      "userId": "gid://shopify/Customer/8320122093801",
+      "timestamp": "2025-08-03T01:37:08.636Z",
+      "type": "2fa_success",
+      "device": "Unknown",
+      "location": "Unknown",
+      "ip": "Unknown",
+      "userAgent": "Unknown",
+      "details": "2FA verification successful"
+    },
+    {
+      "id": "sample_1",
+      "userId": "gid://shopify/Customer/8320122093801",
+      "timestamp": "2025-08-03T00:47:01.734Z",
+      "type": "success",
+      "device": "Windows PC",
+      "location": "Local Network",
+      "ip": "192.168.1.100",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "details": "Login successful"
+    },
+    {
+      "id": "sample_2",
+      "userId": "gid://shopify/Customer/8320122093801",
+      "timestamp": "2025-08-02T23:17:01.734Z",
+      "type": "2fa_success",
+      "device": "Windows PC",
+      "location": "Local Network",
+      "ip": "192.168.1.100",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "details": "Login successful with 2FA"
+    },
+    {
+      "id": "sample_3",
+      "userId": "gid://shopify/Customer/8320122093801",
+      "timestamp": "2025-08-02T01:17:01.734Z",
+      "type": "failed",
+      "device": "Unknown Device",
+      "location": "Unknown Location",
+      "ip": "203.0.113.1",
+      "userAgent": "Unknown",
+      "details": "Invalid credentials"
+    }
+  ]
+}
