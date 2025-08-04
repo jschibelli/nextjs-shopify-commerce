@@ -2,11 +2,11 @@
 
 import { TAGS } from 'lib/constants';
 import {
-  addToCart,
-  createCart,
-  getCart,
-  removeFromCart,
-  updateCart
+    addToCart,
+    createCart,
+    getCart,
+    removeFromCart,
+    updateCart
 } from 'lib/shopify';
 import { revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -90,7 +90,7 @@ export async function updateItemQuantity(
 
     revalidateTag(TAGS.cart);
   } catch (e) {
-    console.error(e);
+    console.error('Error updating item quantity:', e);
     return 'Error updating item quantity';
   }
 }

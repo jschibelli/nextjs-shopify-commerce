@@ -19,6 +19,11 @@ export default function PreferencesForm({ initialPreferences }: PreferencesFormP
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const handleToggle = (key: 'acceptsMarketing' | 'acceptsSMS') => {
+    console.log(`Toggling ${key}:`, {
+      currentValue: preferences[key],
+      newValue: !preferences[key]
+    });
+    
     setPreferences(prev => ({
       ...prev,
       [key]: !prev[key]
@@ -30,6 +35,8 @@ export default function PreferencesForm({ initialPreferences }: PreferencesFormP
     setIsLoading(true);
     setMessage(null);
 
+    console.log('Submitting preferences:', preferences);
+
     try {
       const response = await fetch('/api/account/preferences', {
         method: 'PUT',
@@ -40,26 +47,29 @@ export default function PreferencesForm({ initialPreferences }: PreferencesFormP
       });
 
       const data = await response.json();
+      console.log('Preferences API response:', data);
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Preferences updated successfully! Refreshing page to show changes...' });
+        setMessage({ type: 'success', text: 'Preferences updated successfully!' });
         
         // Update the local state with the response data
         if (data.customer) {
+          console.log('Updating local state with:', data.customer);
           setPreferences({
             acceptsMarketing: data.customer.acceptsMarketing,
             acceptsSMS: data.customer.acceptsSMS
           });
         }
         
-        // Refresh the page after a delay to allow Shopify to sync changes
+        // Clear success message after 3 seconds
         setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+          setMessage(null);
+        }, 3000);
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to update preferences' });
       }
     } catch (error) {
+      console.error('Error submitting preferences:', error);
       setMessage({ type: 'error', text: 'An error occurred. Please try again.' });
     } finally {
       setIsLoading(false);

@@ -5,6 +5,16 @@ import { NextRequest, NextResponse } from 'next/server';
 // In-memory storage for wishlist items (in production, this would be a database)
 const wishlistStorage = new Map<string, Set<string>>();
 
+const getCustomerIdFromToken = (tokenValue: string): string | null => {
+  try {
+    const token = JSON.parse(tokenValue);
+    return token.customer_id || null;
+  } catch (error) {
+    console.error('Error parsing token:', error);
+    return null;
+  }
+};
+
 export async function GET() {
   try {
     const cookieStore = await cookies();
@@ -14,8 +24,12 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get customer ID from token (you might need to decode the token to get customer ID)
-    const customerId = tokenCookie.value; // This is a simplified approach
+    // Get customer ID from token
+    const customerId = getCustomerIdFromToken(tokenCookie.value);
+    
+    if (!customerId) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
     
     // Get customer's wishlist items
     const customerWishlist = wishlistStorage.get(customerId) || new Set();
@@ -78,7 +92,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
     }
 
-    const customerId = tokenCookie.value;
+    // Get customer ID from token
+    const customerId = getCustomerIdFromToken(tokenCookie.value);
+    
+    if (!customerId) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
     
     // Initialize customer wishlist if it doesn't exist
     if (!wishlistStorage.has(customerId)) {
@@ -119,7 +138,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Item ID is required' }, { status: 400 });
     }
 
-    const customerId = tokenCookie.value;
+    // Get customer ID from token
+    const customerId = getCustomerIdFromToken(tokenCookie.value);
+    
+    if (!customerId) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
     
     // Remove product from wishlist
     const customerWishlist = wishlistStorage.get(customerId);
