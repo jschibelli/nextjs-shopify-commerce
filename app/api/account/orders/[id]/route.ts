@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const auth = getAuth();
     const user = await auth.getCurrentUser();
     
@@ -13,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const order = await auth.getOrder(params.id);
+    const order = await auth.getOrder(id);
     
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });

@@ -1,8 +1,8 @@
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata } from 'next';
 
-import { CartProvider } from 'components/cart/cart-context';
-import CartModal from 'components/cart/modal';
+import { EnhancedCartProvider } from 'components/cart/enhanced-cart-context';
+import EnhancedCartModal from 'components/cart/enhanced-cart-modal';
 import DevRevalidateButton from 'components/dev-revalidate-button';
 import Footer from 'components/layout/footer';
 import Navbar from 'components/layout/navbar';
@@ -81,7 +81,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <CartProvider cartPromise={cart}>
+          <EnhancedCartProvider cartPromise={cart}>
             <WishlistProvider>
               <div className="flex min-h-screen flex-col">
                 <Navbar />
@@ -90,12 +90,12 @@ export default function RootLayout({
                 </main>
                 <Footer />
               </div>
-              <CartModal />
+              <EnhancedCartModal />
               <WelcomeToast />
               <DevRevalidateButton />
               <Toaster closeButton />
             </WishlistProvider>
-          </CartProvider>
+          </EnhancedCartProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -4,8 +4,8 @@ import { Heart, HelpCircle, Home, Menu, Search, ShoppingBag, User, X } from 'luc
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { useCart } from '@/components/cart/cart-context';
-import CartModal from '@/components/cart/modal';
+import { useEnhancedCart } from '@/components/cart/enhanced-cart-context';
+import EnhancedCartModal from '@/components/cart/enhanced-cart-modal';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ export default function Navbar() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { cart } = useCart();
+  const { cart } = useEnhancedCart();
   const { wishlistCount } = useWishlist();
 
   const openCart = () => setIsCartOpen(true);
@@ -276,7 +276,7 @@ export default function Navbar() {
       )}
 
       {/* Cart Modal */}
-      <CartModal isOpen={isCartOpen} onClose={closeCart} />
+      <EnhancedCartModal isOpen={isCartOpen} onClose={closeCart} />
       
       {/* Wishlist Modal */}
       <WishlistModal 

@@ -8,7 +8,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
-async function OrderDetails({ params }: { params: { id: string } }) {
+async function OrderDetails({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const cookieStore = await cookies();
   const tokenCookie = cookieStore.get('customer_token');
   
@@ -27,7 +28,7 @@ async function OrderDetails({ params }: { params: { id: string } }) {
   let error: string | null = null;
 
   try {
-    order = await auth.getOrder(params.id);
+    order = await auth.getOrder(id);
   } catch (err) {
     console.error('Error fetching order:', err);
     error = 'Failed to load order details. Please try again later.';
@@ -337,7 +338,7 @@ async function OrderDetails({ params }: { params: { id: string } }) {
   );
 }
 
-export default function OrderDetailsPage({ params }: { params: { id: string } }) {
+export default function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   return (
     <Suspense fallback={
       <div className="animate-pulse space-y-6">

@@ -6,7 +6,7 @@ import { addItem } from 'components/cart/actions';
 import { useProduct } from 'components/product/product-context';
 import { Product, ProductVariant } from 'lib/shopify/types';
 import { useActionState } from 'react';
-import { useCart } from './cart-context';
+import { useEnhancedCart } from './enhanced-cart-context';
 
 function SubmitButton({
   availableForSale,
@@ -59,7 +59,7 @@ function SubmitButton({
 
 export function AddToCart({ product }: { product: Product }) {
   const { variants, availableForSale } = product;
-  const { addCartItem } = useCart();
+  const { addCartItem } = useEnhancedCart();
   const { state } = useProduct();
   const [message, formAction] = useActionState(addItem, null);
 

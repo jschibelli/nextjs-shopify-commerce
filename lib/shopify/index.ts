@@ -33,6 +33,7 @@ import {
 } from './queries/collection';
 import { getCustomerQuery } from './queries/customer';
 import { getMenuQuery } from './queries/menu';
+import { getCustomerOrdersQuery, getOrderQuery } from './queries/order';
 import { getPageQuery, getPagesQuery } from './queries/page';
 import {
   getProductQuery,
