@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
             lastName: customerData.last_name,
             phone: customerData.phone,
             acceptsMarketing: customerData.accepts_marketing,
-            acceptsSMS: customerData.sms_marketing_consent?.state === 'subscribed',
+            acceptsSMS: false, // Default to false since SMS marketing requires special setup
             createdAt: customerData.created_at,
             updatedAt: customerData.updated_at,
             defaultAddress: customerData.default_address,
