@@ -107,20 +107,20 @@ export default async function HomePage() {
           <p className="text-sm font-medium">
             FINAL CLEARANCE: Take 20% off 'Sale Must-Haves'
           </p>
-          <button className="text-white hover:text-gray-300">
+          <button className="text-white hover:text-white/80">
             <X className="h-4 w-4" />
           </button>
         </div>
       </div>
 
       {/* Hero Section - NEW SEASON */}
-      <section className="bg-gray-100 py-16">
+      <section className="bg-muted py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
             {/* Left Model - Female Product */}
             <div className="relative group cursor-pointer">
               <Link href={femaleProduct ? `/product/${femaleProduct.handle}` : '#'}>
-                <div className="aspect-[3/4] bg-gray-200 rounded-lg overflow-hidden">
+                <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden">
                   {femaleProduct?.featuredImage?.url ? (
                     <Image
                       src={femaleProduct.featuredImage.url}
@@ -129,8 +129,8 @@ export default async function HomePage() {
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                      <div className="text-center text-gray-500">
+                    <div className="w-full h-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center">
+                      <div className="text-center text-muted-foreground">
                         <div className="text-4xl mb-2">👗</div>
                         <p className="text-sm">Female Model</p>
                         <p className="text-xs opacity-80">Black Denim Jacket, Red Mini-Skirt</p>
@@ -160,17 +160,17 @@ export default async function HomePage() {
             {/* Center Content */}
             <div className="text-center space-y-6">
               <div className="space-y-2">
-                <h1 className="text-6xl font-bold text-black leading-none">
+                <h1 className="text-6xl font-bold text-foreground leading-none">
                   NEW<br />SEASON
                 </h1>
-                <p className="text-lg text-gray-600">
+                <p className="text-lg text-muted-foreground">
                   New arrivals are here!
                 </p>
               </div>
               <Button 
                 variant="outline" 
                 size="lg"
-                className="border-black text-white bg-black hover:bg-gray-800 hover:text-white transition-colors"
+                className="border-foreground text-background bg-foreground hover:bg-foreground/80 hover:text-background transition-colors"
                 asChild
               >
                 <Link href="/search?collection=new-arrivals">
@@ -182,7 +182,7 @@ export default async function HomePage() {
             {/* Right Model - Male Product */}
             <div className="relative group cursor-pointer">
               <Link href={maleProduct ? `/product/${maleProduct.handle}` : '#'}>
-                <div className="aspect-[3/4] bg-gray-200 rounded-lg overflow-hidden">
+                <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden">
                   {maleProduct?.featuredImage?.url ? (
                     <Image
                       src={maleProduct.featuredImage.url}
@@ -191,8 +191,8 @@ export default async function HomePage() {
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                      <div className="text-center text-gray-500">
+                    <div className="w-full h-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center">
+                      <div className="text-center text-muted-foreground">
                         <div className="text-4xl mb-2">👔</div>
                         <p className="text-sm">Male Model</p>
                         <p className="text-xs opacity-80">Patterned Shirt, Denim Shorts</p>
@@ -223,16 +223,16 @@ export default async function HomePage() {
       </section>
 
       {/* Product Categories */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-muted/50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 text-gray-900">Shop by Category</h2>
-            <p className="text-gray-600">Explore our curated collections</p>
+            <h2 className="text-3xl font-bold mb-4 text-foreground">Shop by Category</h2>
+            <p className="text-muted-foreground">Explore our curated collections</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Hydrogen Product 1 */}
             <Link href="/search?collection=hydrogen" className="group cursor-pointer">
-              <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
+              <div className="relative aspect-square bg-muted rounded-lg overflow-hidden mb-4">
                 {hydrogenProduct1?.featuredImage?.url ? (
                   <Image
                     src={hydrogenProduct1.featuredImage.url}
@@ -241,8 +241,8 @@ export default async function HomePage() {
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                    <div className="text-center text-gray-500">
+                  <div className="w-full h-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center">
+                    <div className="text-center text-muted-foreground">
                       <div className="text-4xl mb-2">👕</div>
                       <p className="text-sm">Hydrogen Collection</p>
                     </div>
@@ -257,13 +257,13 @@ export default async function HomePage() {
                   )}
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-gray-900">HYDROGEN</h3>
+              <h3 className="text-xl font-bold mb-2 text-foreground">HYDROGEN</h3>
               <p className="text-red-600 font-medium">Get up to 20% off</p>
             </Link>
 
             {/* Hydrogen Product 2 */}
             <Link href="/search?collection=hydrogen" className="group cursor-pointer">
-              <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
+              <div className="relative aspect-square bg-muted rounded-lg overflow-hidden mb-4">
                 {hydrogenProduct2?.featuredImage?.url ? (
                   <Image
                     src={hydrogenProduct2.featuredImage.url}
@@ -272,8 +272,8 @@ export default async function HomePage() {
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                    <div className="text-center text-gray-500">
+                  <div className="w-full h-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center">
+                    <div className="text-center text-muted-foreground">
                       <div className="text-4xl mb-2">👖</div>
                       <p className="text-sm">Hydrogen Collection</p>
                     </div>
@@ -288,13 +288,13 @@ export default async function HomePage() {
                   )}
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-gray-900">HYDROGEN</h3>
+              <h3 className="text-xl font-bold mb-2 text-foreground">HYDROGEN</h3>
               <p className="text-red-600 font-medium">Get up to 20% off</p>
             </Link>
 
             {/* Hydrogen Product 3 */}
             <Link href="/search?collection=hydrogen" className="group cursor-pointer">
-              <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
+              <div className="relative aspect-square bg-muted rounded-lg overflow-hidden mb-4">
                 {hydrogenProduct3?.featuredImage?.url ? (
                   <Image
                     src={hydrogenProduct3.featuredImage.url}
@@ -303,8 +303,8 @@ export default async function HomePage() {
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                    <div className="text-center text-gray-500">
+                  <div className="w-full h-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center">
+                    <div className="text-center text-muted-foreground">
                       <div className="text-4xl mb-2">👜</div>
                       <p className="text-sm">Hydrogen Collection</p>
                     </div>
@@ -319,7 +319,7 @@ export default async function HomePage() {
                   )}
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-gray-900">HYDROGEN</h3>
+              <h3 className="text-xl font-bold mb-2 text-foreground">HYDROGEN</h3>
               <p className="text-red-600 font-medium">Get up to 20% off</p>
             </Link>
           </div>
