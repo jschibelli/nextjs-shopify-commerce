@@ -12,7 +12,7 @@ export const metadata = {
   }
 };
 
-// Helper function to get new arrival products
+// Helper function to get new arrival products for hero section
 async function getNewArrivalProducts() {
   if (!process.env.SHOPIFY_STORE_DOMAIN || !process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
     return { femaleProduct: null, maleProduct: null };
@@ -20,54 +20,59 @@ async function getNewArrivalProducts() {
 
   let products: any[] = [];
   
-  // Try different possible handles for the featured collection
-  const featuredHandles = ['featured-1', 'featured', 'featured-collection', 'featured-products'];
-  
-  for (const handle of featuredHandles) {
-    try {
-      products = await getCollectionProducts({ collection: handle });
-      
-      if (products.length >= 2) {
-        return {
-          femaleProduct: products[0],
-          maleProduct: products[1]
-        };
-      } else if (products.length === 1) {
-        // Try to get a second product from hydrogen collection
-        try {
-          const hydrogenProducts = await getCollectionProducts({ collection: 'hydrogen' });
-          if (hydrogenProducts.length > 0) {
-            return {
-              femaleProduct: products[0], // Featured product
-              maleProduct: hydrogenProducts[0] // First hydrogen product
-            };
-          }
-        } catch (error) {
-          // Continue to next handle
-        }
-        
-        // If we can't get a second product, return the featured product for both sides
-        return {
-          femaleProduct: products[0],
-          maleProduct: products[0]
-        };
-      }
-    } catch (error) {
-      // Continue to next handle
-    }
-  }
-
-  // Fallback to hydrogen collection
+  // Try to get products from new-arrivals collection
   try {
-    products = await getCollectionProducts({ collection: 'hydrogen' });
+    products = await getCollectionProducts({ collection: 'new-arrivals' });
+    console.log('New arrivals products found:', products.length);
+    console.log('New arrivals products:', products.map(p => ({ title: p.title, handle: p.handle })));
+    
     if (products.length >= 2) {
       return {
         femaleProduct: products[0],
         maleProduct: products[1]
       };
+    } else if (products.length === 1) {
+      // If only one product in new-arrivals, try to get a second from hydrogen collection
+      try {
+        const hydrogenProducts = await getCollectionProducts({ collection: 'hydrogen' });
+        console.log('Hydrogen products found:', hydrogenProducts.length);
+        if (hydrogenProducts.length > 0) {
+          return {
+            femaleProduct: products[0], // New arrival product
+            maleProduct: hydrogenProducts[0] // First hydrogen product
+          };
+        }
+      } catch (error) {
+        // Continue to fallback
+      }
+      
+      // If we can't get a second product, return the new arrival product for both sides
+      return {
+        femaleProduct: products[0],
+        maleProduct: products[0]
+      };
     }
   } catch (error) {
-    // No fallback available
+    console.log('Collection "new-arrivals" not found, trying hydrogen collection...');
+  }
+
+  // Fallback to hydrogen collection
+  try {
+    products = await getCollectionProducts({ collection: 'hydrogen' });
+    console.log('Fallback hydrogen products found:', products.length);
+    if (products.length >= 2) {
+      return {
+        femaleProduct: products[0],
+        maleProduct: products[1]
+      };
+    } else if (products.length === 1) {
+      return {
+        femaleProduct: products[0],
+        maleProduct: products[0]
+      };
+    }
+  } catch (error) {
+    console.log('Collection "hydrogen" not found');
   }
 
   return { femaleProduct: null, maleProduct: null };
