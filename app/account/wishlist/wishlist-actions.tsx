@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from 'components/ui/button';
+import { useWishlist } from 'components/wishlist/wishlist-context';
 import {
     Eye,
     ShoppingCart,
@@ -14,12 +15,12 @@ interface WishlistActionsProps {
     name: string;
     inStock: boolean;
   };
-  onRemove?: (itemId: string) => void;
 }
 
-export default function WishlistActions({ item, onRemove }: WishlistActionsProps) {
+export default function WishlistActions({ item }: WishlistActionsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const { removeFromWishlist } = useWishlist();
 
   const handleAddToCart = async () => {
     setIsLoading(true);
@@ -56,21 +57,9 @@ export default function WishlistActions({ item, onRemove }: WishlistActionsProps
     setMessage('');
 
     try {
-      const response = await fetch(`/api/account/wishlist?itemId=${item.id}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage('Removed from wishlist');
-        if (onRemove) {
-          onRemove(item.id);
-        }
-        setTimeout(() => setMessage(''), 3000);
-      } else {
-        setMessage(data.error || 'Failed to remove from wishlist');
-      }
+      await removeFromWishlist(item.id);
+      setMessage('Removed from wishlist');
+      setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       setMessage('An error occurred. Please try again.');
     } finally {

@@ -7,32 +7,17 @@ import clsx from 'clsx';
 import { Heart, ShoppingCart, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Fragment, useEffect, useState } from 'react';
-
-interface WishlistItem {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice: number;
-  image: string;
-  rating: number;
-  reviews: number;
-  inStock: boolean;
-  addedDate: string;
-  category: string;
-  handle: string;
-}
+import { Fragment, useState } from 'react';
+import { useWishlist } from './wishlist-context';
 
 interface WishlistModalProps {
   isOpen?: boolean;
   onClose?: () => void;
-  onWishlistUpdate?: (count: number) => void;
 }
 
-export default function WishlistModal({ isOpen: externalIsOpen, onClose: externalOnClose, onWishlistUpdate }: WishlistModalProps = {}) {
+export default function WishlistModal({ isOpen: externalIsOpen, onClose: externalOnClose }: WishlistModalProps = {}) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
-  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { wishlistItems, removeFromWishlist, isLoading } = useWishlist();
   
   // Use external state if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -41,57 +26,15 @@ export default function WishlistModal({ isOpen: externalIsOpen, onClose: externa
   const openWishlist = () => setIsOpen(true);
   const closeWishlist = () => setIsOpen(false);
 
-  // Fetch wishlist items on component mount and when modal opens
-  useEffect(() => {
-    fetchWishlistItems();
-  }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchWishlistItems();
-    }
-  }, [isOpen]);
-
-  const fetchWishlistItems = async () => {
+  const handleRemoveFromWishlist = async (itemId: string) => {
     try {
-      setIsLoading(true);
-      const response = await fetch('/api/account/wishlist');
-      if (response.ok) {
-        const data = await response.json();
-        const items = data.wishlistItems || [];
-        setWishlistItems(items);
-        // Update parent component with new count
-        if (onWishlistUpdate) {
-          onWishlistUpdate(items.length);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch wishlist:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const removeFromWishlist = async (itemId: string) => {
-    try {
-      const response = await fetch(`/api/account/wishlist?itemId=${itemId}`, {
-        method: 'DELETE',
-      });
-      
-      if (response.ok) {
-        const updatedItems = wishlistItems.filter(item => item.id !== itemId);
-        setWishlistItems(updatedItems);
-        // Update parent component with new count
-        if (onWishlistUpdate) {
-          onWishlistUpdate(updatedItems.length);
-        }
-      }
+      await removeFromWishlist(itemId);
     } catch (error) {
       console.error('Failed to remove from wishlist:', error);
     }
   };
 
-  const addToCart = async (item: WishlistItem) => {
+  const addToCart = async (item: any) => {
     // This would integrate with your cart system
     console.log('Adding to cart:', item);
     // You can implement cart integration here
@@ -198,7 +141,7 @@ export default function WishlistModal({ isOpen: externalIsOpen, onClose: externa
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => removeFromWishlist(item.id)}
+                              onClick={() => handleRemoveFromWishlist(item.id)}
                               className="h-8 w-8 text-destructive hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />

@@ -7,10 +7,9 @@ import { VariantSelector } from './variant-selector';
 
 interface ProductDescriptionProps {
   product: Product;
-  onWishlistUpdate?: (count: number) => void;
 }
 
-export function ProductDescription({ product, onWishlistUpdate }: ProductDescriptionProps) {
+export function ProductDescription({ product }: ProductDescriptionProps) {
   return (
     <>
       <div className="mb-6 flex flex-col border-b pb-6 dark:border-neutral-700">
@@ -31,7 +30,7 @@ export function ProductDescription({ product, onWishlistUpdate }: ProductDescrip
       ) : null}
       <div className="space-y-4">
         <AddToCart product={product} />
-        <AddToWishlist product={product} onWishlistUpdate={onWishlistUpdate} />
+        <AddToWishlist product={product} />
       </div>
     </>
   );
