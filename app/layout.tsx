@@ -28,6 +28,12 @@ export const metadata: Metadata = {
     }
   ],
   creator: 'Vercel',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',

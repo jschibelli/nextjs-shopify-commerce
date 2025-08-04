@@ -13,9 +13,15 @@ interface AddToWishlistProps {
 export function AddToWishlist({ product }: AddToWishlistProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const { isInWishlist, addToWishlist, removeFromWishlist, isAuthenticated } = useWishlist();
 
   const handleWishlistToggle = async () => {
+    if (!isAuthenticated) {
+      setMessage('Please log in to manage your wishlist');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
     setIsLoading(true);
     setMessage('');
 
@@ -53,6 +59,8 @@ export function AddToWishlist({ product }: AddToWishlistProps) {
         <div className={`absolute top-full left-0 right-0 mt-2 p-2 rounded text-xs text-center ${
           message.includes('Added') || message.includes('Removed')
             ? 'bg-green-100 text-green-800' 
+            : message.includes('log in')
+            ? 'bg-blue-100 text-blue-800'
             : 'bg-red-100 text-red-800'
         }`}>
           {message}
