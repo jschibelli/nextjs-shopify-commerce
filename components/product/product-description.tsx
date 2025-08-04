@@ -5,7 +5,11 @@ import { Product } from 'lib/shopify/types';
 import { AddToWishlist } from './add-to-wishlist';
 import { VariantSelector } from './variant-selector';
 
-export function ProductDescription({ product }: { product: Product }) {
+interface ProductDescriptionProps {
+  product: Product;
+}
+
+export function ProductDescription({ product }: ProductDescriptionProps) {
   return (
     <>
       <div className="mb-6 flex flex-col border-b pb-6 dark:border-neutral-700">
