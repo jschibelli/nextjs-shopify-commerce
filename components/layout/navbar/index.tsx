@@ -4,6 +4,8 @@ import { Heart, HelpCircle, Menu, Search, ShoppingBag, User, X } from 'lucide-re
 import Link from 'next/link';
 import { useState } from 'react';
 
+import { useCart } from '@/components/cart/cart-context';
+import CartModal from '@/components/cart/modal';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +13,11 @@ import { Button } from '@/components/ui/button';
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { cart } = useCart();
+
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -95,11 +102,16 @@ export default function Navbar() {
               <Button variant="ghost" size="icon">
                 <Heart className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/cart">
-                  <ShoppingBag className="h-5 w-5" />
-                  <span className="text-xs ml-1">Bag (0)</span>
-                </Link>
+              <Button variant="ghost" size="icon" className="relative" onClick={openCart}>
+                <ShoppingBag className="h-5 w-5" />
+                {cart?.totalQuantity && cart.totalQuantity > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
+                  >
+                    {cart.totalQuantity}
+                  </Badge>
+                )}
               </Button>
               <ThemeToggle />
             </div>
@@ -172,17 +184,25 @@ export default function Navbar() {
               <Button variant="ghost" size="icon">
                 <Heart className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/cart">
-                  <ShoppingBag className="h-5 w-5" />
-                  <span className="text-xs ml-1">Bag (0)</span>
-                </Link>
+              <Button variant="ghost" size="icon" className="relative" onClick={openCart}>
+                <ShoppingBag className="h-5 w-5" />
+                {cart?.totalQuantity && cart.totalQuantity > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
+                  >
+                    {cart.totalQuantity}
+                  </Badge>
+                )}
               </Button>
               <ThemeToggle />
             </div>
           </div>
         </div>
       )}
+
+      {/* Cart Modal */}
+      <CartModal isOpen={isCartOpen} onClose={closeCart} />
     </header>
   );
 }

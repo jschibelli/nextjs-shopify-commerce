@@ -1,8 +1,8 @@
 'use client';
 
-import clsx from 'clsx';
 import { Dialog, Transition } from '@headlessui/react';
 import { ShoppingCartIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import clsx from 'clsx';
 import LoadingDots from 'components/loading-dots';
 import Price from 'components/price';
 import { DEFAULT_OPTION } from 'lib/constants';
@@ -21,10 +21,20 @@ type MerchandiseSearchParams = {
   [key: string]: string;
 };
 
-export default function CartModal() {
+interface CartModalProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function CartModal({ isOpen: externalIsOpen, onClose: externalOnClose }: CartModalProps = {}) {
   const { cart, updateCartItem } = useCart();
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const quantityRef = useRef(cart?.totalQuantity);
+  
+  // Use external state if provided, otherwise use internal state
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const setIsOpen = externalOnClose ? externalOnClose : setInternalIsOpen;
+  
   const openCart = () => setIsOpen(true);
   const closeCart = () => setIsOpen(false);
 
@@ -45,13 +55,15 @@ export default function CartModal() {
       }
       quantityRef.current = cart?.totalQuantity;
     }
-  }, [isOpen, cart?.totalQuantity, quantityRef]);
+  }, [isOpen, cart?.totalQuantity, quantityRef, setIsOpen]);
 
   return (
     <>
-      <button aria-label="Open cart" onClick={openCart}>
-        <OpenCart quantity={cart?.totalQuantity} />
-      </button>
+      {!externalIsOpen && (
+        <button aria-label="Open cart" onClick={openCart}>
+          <OpenCart quantity={cart?.totalQuantity} />
+        </button>
+      )}
       <Transition show={isOpen}>
         <Dialog onClose={closeCart} className="relative z-50">
           <Transition.Child
