@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== FETCHING ANALYTICS ===');
-    
     // Check admin authentication
     const adminAuth = getShopifyAdminAuth();
     const adminUser = await adminAuth.getCurrentAdminUserFromSession();
@@ -51,14 +49,17 @@ export async function GET(request: NextRequest) {
       })
     ]);
 
-    // Check for errors
+    // Handle errors
     if (!productsResponse.ok || !ordersResponse.ok || !customersResponse.ok) {
-      const errorText = await productsResponse.text();
-      console.error('Analytics API error:', errorText);
-      return NextResponse.json(
-        { error: 'Failed to fetch analytics data', details: errorText },
-        { status: 500 }
-      );
+      const errors = [];
+      if (!productsResponse.ok) errors.push(`Products: ${productsResponse.status}`);
+      if (!ordersResponse.ok) errors.push(`Orders: ${ordersResponse.status}`);
+      if (!customersResponse.ok) errors.push(`Customers: ${customersResponse.status}`);
+      
+      return NextResponse.json({
+        error: 'Failed to fetch analytics data',
+        details: errors.join(', ')
+      }, { status: 500 });
     }
 
     const [productsData, ordersData, customersData] = await Promise.all([
@@ -71,91 +72,24 @@ export async function GET(request: NextRequest) {
     const orders = ordersData.orders || [];
     const customers = customersData.customers || [];
 
-    console.log('Analytics data fetched:', {
+    // Calculate analytics statistics
+    const totalRevenue = orders.reduce((sum: number, order: any) => {
+      return sum + parseFloat(order.total_price || '0');
+    }, 0);
+
+    const analyticsData = {
       products: products.length,
       orders: orders.length,
-      customers: customers.length
-    });
-
-    // Calculate comprehensive analytics
-    const analytics = {
-      overview: {
-        totalProducts: products.length,
-        totalOrders: orders.length,
-        totalCustomers: customers.length,
-        totalRevenue: orders.reduce((sum: number, order: any) => {
-          return sum + parseFloat(order.total_price || '0');
-        }, 0).toFixed(2)
-      },
-      products: {
-        active: products.filter((p: any) => p.status === 'active').length,
-        draft: products.filter((p: any) => p.status === 'draft').length,
-        archived: products.filter((p: any) => p.status === 'archived').length,
-        withImages: products.filter((p: any) => p.images && p.images.length > 0).length,
-        withVariants: products.filter((p: any) => p.variants && p.variants.length > 1).length
-      },
-      orders: {
-        pending: orders.filter((o: any) => o.financial_status === 'pending').length,
-        paid: orders.filter((o: any) => o.financial_status === 'paid').length,
-        fulfilled: orders.filter((o: any) => o.fulfillment_status === 'fulfilled').length,
-        cancelled: orders.filter((o: any) => o.cancelled_at).length,
-        averageOrderValue: orders.length > 0 ? 
-          (orders.reduce((sum: number, order: any) => {
-            return sum + parseFloat(order.total_price || '0');
-          }, 0) / orders.length).toFixed(2) : '0.00'
-      },
-      customers: {
-        verified: customers.filter((c: any) => c.verified_email).length,
-        acceptsMarketing: customers.filter((c: any) => c.accepts_marketing).length,
-        totalSpent: customers.reduce((sum: number, customer: any) => {
-          return sum + parseFloat(customer.total_spent || '0');
-        }, 0).toFixed(2),
-        averageCustomerValue: customers.length > 0 ? 
-          (customers.reduce((sum: number, customer: any) => {
-            return sum + parseFloat(customer.total_spent || '0');
-          }, 0) / customers.length).toFixed(2) : '0.00'
-      },
-      recentActivity: {
-        recentProducts: products
-          .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-          .slice(0, 5)
-          .map((p: any) => ({
-            id: p.id,
-            title: p.title,
-            status: p.status,
-            updated_at: p.updated_at
-          })),
-        recentOrders: orders
-          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 5)
-          .map((o: any) => ({
-            id: o.id,
-            name: o.name,
-            total_price: o.total_price,
-            financial_status: o.financial_status,
-            created_at: o.created_at
-          })),
-        recentCustomers: customers
-          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 5)
-          .map((c: any) => ({
-            id: c.id,
-            first_name: c.first_name,
-            last_name: c.last_name,
-            email: c.email,
-            total_spent: c.total_spent,
-            created_at: c.created_at
-          }))
-      }
+      customers: customers.length,
+      revenue: totalRevenue.toFixed(2),
+      averageOrderValue: orders.length > 0 ? (totalRevenue / orders.length).toFixed(2) : '0.00',
+      verifiedCustomers: customers.filter((customer: any) => customer.verified_email).length,
+      acceptsMarketing: customers.filter((customer: any) => customer.accepts_marketing).length
     };
 
-    return NextResponse.json({
-      analytics,
-      message: 'Analytics data fetched successfully'
-    });
+    return NextResponse.json(analyticsData);
 
   } catch (error) {
-    console.error('Error fetching analytics:', error);
     return NextResponse.json({
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

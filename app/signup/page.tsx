@@ -71,6 +71,8 @@ export default function SignupPage() {
       const data = await response.json();
 
       if (response.ok) {
+        // Dispatch login success event for components to react to
+        window.dispatchEvent(new CustomEvent('login-success'));
         // Redirect to account dashboard on successful signup
         router.push('/account');
       } else {

@@ -1,3 +1,4 @@
+import { getAuth } from 'lib/auth';
 import { getProducts } from 'lib/shopify';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
@@ -5,34 +6,50 @@ import { NextRequest, NextResponse } from 'next/server';
 // In-memory storage for wishlist items (in production, this would be a database)
 const wishlistStorage = new Map<string, Set<string>>();
 
-const getCustomerIdFromToken = (tokenValue: string): string | null => {
-  try {
-    const token = JSON.parse(tokenValue);
-    return token.customer_id || null;
-  } catch (error) {
-    console.error('Error parsing token:', error);
-    return null;
+// Function to clear wishlist data for a specific customer
+export function clearWishlistForCustomer(customerId: string) {
+  if (wishlistStorage.has(customerId)) {
+    wishlistStorage.delete(customerId);
+    console.log('Wishlist cleared for customer:', customerId);
   }
-};
+}
+
+// Function to clear all wishlist data (useful for testing or admin purposes)
+export function clearAllWishlistData() {
+  const customerCount = wishlistStorage.size;
+  wishlistStorage.clear();
+  console.log('All wishlist data cleared. Customers affected:', customerCount);
+  return customerCount;
+}
 
 export async function GET() {
   try {
+    // Check if this is an admin session first
     const cookieStore = await cookies();
     const tokenCookie = cookieStore.get('customer_token');
     
-    if (!tokenCookie) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (tokenCookie) {
+      try {
+        const sessionData = JSON.parse(tokenCookie.value);
+        if (sessionData.isStaffMember) {
+          // This is an admin session, return empty wishlist for admin
+          return NextResponse.json({ wishlistItems: [] });
+        }
+      } catch (error) {
+        // If session parsing fails, continue with customer auth
+      }
     }
-
-    // Get customer ID from token
-    const customerId = getCustomerIdFromToken(tokenCookie.value);
     
-    if (!customerId) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    const auth = getAuth();
+    await auth.initializeFromCookies();
+    const user = await auth.getCurrentUser();
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     // Get customer's wishlist items
-    const customerWishlist = wishlistStorage.get(customerId) || new Set();
+    const customerWishlist = wishlistStorage.get(user.id) || new Set();
     
     if (customerWishlist.size === 0) {
       // Return empty wishlist for new customers
@@ -79,10 +96,27 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if this is an admin session first
     const cookieStore = await cookies();
     const tokenCookie = cookieStore.get('customer_token');
     
-    if (!tokenCookie) {
+    if (tokenCookie) {
+      try {
+        const sessionData = JSON.parse(tokenCookie.value);
+        if (sessionData.isStaffMember) {
+          // This is an admin session, return error for admin
+          return NextResponse.json({ error: 'Admin users cannot modify wishlist' }, { status: 403 });
+        }
+      } catch (error) {
+        // If session parsing fails, continue with customer auth
+      }
+    }
+    
+    const auth = getAuth();
+    await auth.initializeFromCookies();
+    const user = await auth.getCurrentUser();
+    
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -91,23 +125,16 @@ export async function POST(request: NextRequest) {
     if (!productId) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
     }
-
-    // Get customer ID from token
-    const customerId = getCustomerIdFromToken(tokenCookie.value);
-    
-    if (!customerId) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
     
     // Initialize customer wishlist if it doesn't exist
-    if (!wishlistStorage.has(customerId)) {
-      wishlistStorage.set(customerId, new Set());
+    if (!wishlistStorage.has(user.id)) {
+      wishlistStorage.set(user.id, new Set());
     }
     
     // Add product to wishlist
-    wishlistStorage.get(customerId)!.add(productId);
+    wishlistStorage.get(user.id)!.add(productId);
     
-    console.log('Add to wishlist:', { customerId, productId });
+    console.log('Add to wishlist:', { customerId: user.id, productId });
 
     return NextResponse.json({ 
       success: true, 
@@ -124,10 +151,27 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Check if this is an admin session first
     const cookieStore = await cookies();
     const tokenCookie = cookieStore.get('customer_token');
     
-    if (!tokenCookie) {
+    if (tokenCookie) {
+      try {
+        const sessionData = JSON.parse(tokenCookie.value);
+        if (sessionData.isStaffMember) {
+          // This is an admin session, return error for admin
+          return NextResponse.json({ error: 'Admin users cannot modify wishlist' }, { status: 403 });
+        }
+      } catch (error) {
+        // If session parsing fails, continue with customer auth
+      }
+    }
+    
+    const auth = getAuth();
+    await auth.initializeFromCookies();
+    const user = await auth.getCurrentUser();
+    
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -137,21 +181,14 @@ export async function DELETE(request: NextRequest) {
     if (!itemId) {
       return NextResponse.json({ error: 'Item ID is required' }, { status: 400 });
     }
-
-    // Get customer ID from token
-    const customerId = getCustomerIdFromToken(tokenCookie.value);
-    
-    if (!customerId) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
     
     // Remove product from wishlist
-    const customerWishlist = wishlistStorage.get(customerId);
+    const customerWishlist = wishlistStorage.get(user.id);
     if (customerWishlist) {
       customerWishlist.delete(itemId);
     }
     
-    console.log('Remove from wishlist:', { customerId, itemId });
+    console.log('Remove from wishlist:', { customerId: user.id, itemId });
 
     return NextResponse.json({ 
       success: true, 

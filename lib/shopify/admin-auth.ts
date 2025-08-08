@@ -51,31 +51,18 @@ export class ShopifyAdminAuth {
         shopifyUserId: staffMember.id
       };
     } catch (error) {
-      console.error('Shopify admin auth error:', error);
       return null;
     }
   }
 
   async checkIfEmailIsStaffMember(email: string): Promise<ShopifyAdminUser | null> {
     try {
-      console.log(`Checking if email is staff member: ${email}`);
-      
       // Get Shopify staff member details directly
       const staffMember = await this.getShopifyStaffMember(email);
       
-      console.log(`Staff member check result for ${email}:`, staffMember ? 'FOUND' : 'NOT FOUND');
-      
       if (!staffMember) {
-        console.log(`No staff member found for email: ${email}`);
         return null;
       }
-
-      console.log(`Staff member found for ${email}:`, {
-        id: staffMember.id,
-        email: staffMember.email,
-        role: staffMember.role,
-        permissions: staffMember.permissions
-      });
 
       return {
         id: staffMember.id,
@@ -87,7 +74,6 @@ export class ShopifyAdminAuth {
         shopifyUserId: staffMember.id
       };
     } catch (error) {
-      console.error('Shopify admin auth error:', error);
       return null;
     }
   }
@@ -96,23 +82,23 @@ export class ShopifyAdminAuth {
     try {
       // Check if there's an admin session token
       const tokenCookie = await this.getSessionCookie();
-      if (!tokenCookie) return null;
+      if (!tokenCookie) {
+        return null;
+      }
 
       const sessionData = JSON.parse(tokenCookie);
       
       // Check if this is an admin session
-      if (sessionData.isStaffMember && sessionData.customer_id) {
+      if (sessionData.isStaffMember && sessionData.email) {
         // For admin sessions, we need to check if the user is still a staff member
-        // Use the proper API method to get current staff member data
-        const email = sessionData.email || 'admin@example.com';
-        const staffMember = await this.getShopifyStaffMember(email);
+        const staffMember = await this.getShopifyStaffMember(sessionData.email);
         if (staffMember) {
           return {
-            id: sessionData.customer_id,
-            email: sessionData.email || staffMember.email,
+            id: sessionData.customer_id || staffMember.id,
+            email: sessionData.email,
             firstName: staffMember.first_name,
             lastName: staffMember.last_name,
-            role: staffMember.role,
+            role: sessionData.role || staffMember.role,
             permissions: staffMember.permissions,
             shopifyUserId: staffMember.id
           };
@@ -121,7 +107,6 @@ export class ShopifyAdminAuth {
 
       return null;
     } catch (error) {
-      console.error('Error getting current admin user from session:', error);
       return null;
     }
   }
@@ -130,10 +115,11 @@ export class ShopifyAdminAuth {
     try {
       const { cookies } = await import('next/headers');
       const cookieStore = await cookies();
-      const tokenCookie = cookieStore.get('customer_token');
-      return tokenCookie?.value || null;
+      // Check for admin token first, then fallback to customer token for backward compatibility
+      const adminTokenCookie = cookieStore.get('admin_token');
+      const customerTokenCookie = cookieStore.get('customer_token');
+      return adminTokenCookie?.value || customerTokenCookie?.value || null;
     } catch (error) {
-      console.error('Error getting session cookie:', error);
       return null;
     }
   }
@@ -144,17 +130,13 @@ export class ShopifyAdminAuth {
       const adminKey = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
 
       if (!domain || !adminKey) {
-        console.error('Shopify admin credentials not configured');
         return null;
       }
 
       const baseUrl = domain.startsWith('https://') ? domain : `https://${domain}`;
-      
-      console.log('Attempting to fetch staff member data for:', email);
 
       // First, get shop information to check if user is shop owner
       try {
-        console.log('Checking shop endpoint for admin access');
         const shopResponse = await fetch(`${baseUrl}/admin/api/2023-01/shop.json`, {
           headers: {
             'X-Shopify-Access-Token': adminKey,
@@ -164,14 +146,12 @@ export class ShopifyAdminAuth {
 
         if (shopResponse.ok) {
           const shopData = await shopResponse.json();
-          console.log('Shop data retrieved:', shopData);
 
           // Check if the user is the shop owner
           const shopOwnerEmail = shopData.shop?.email;
           const shopOwnerName = shopData.shop?.shop_owner;
 
           if (shopOwnerEmail && shopOwnerEmail.toLowerCase() === email.toLowerCase()) {
-            console.log(`User ${email} is shop owner - granting admin access`);
             return {
               id: 'shop_owner',
               email: email,
@@ -183,20 +163,15 @@ export class ShopifyAdminAuth {
               active: true
             };
           }
-
-          // If not shop owner, check if they have admin access by trying other endpoints
-          console.log(`User ${email} is not shop owner, checking other admin endpoints`);
         }
       } catch (error) {
-        console.error('Error checking shop endpoint:', error);
+        // Continue to other checks
       }
 
       // Since the API doesn't provide access to staff member data,
       // we need to use a different approach. For now, we'll check if the user
       // can access admin-only endpoints as a way to determine admin status
       try {
-        console.log('Testing admin access by checking admin-only endpoints');
-        
         // Try to access an admin-only endpoint to see if the user has admin access
         const adminTestResponse = await fetch(`${baseUrl}/admin/api/2023-01/products.json?limit=1`, {
           headers: {
@@ -206,28 +181,23 @@ export class ShopifyAdminAuth {
         });
 
         if (adminTestResponse.ok) {
-          console.log('User has admin access to products endpoint');
           // This means the API key has admin access, but we can't determine specific user permissions
           // For now, we'll deny access since we can't verify the specific user
-          console.log(`Cannot verify specific user ${email} permissions via API - denying access`);
           return null;
         }
       } catch (error) {
-        console.error('Error testing admin access:', error);
+        // Continue
       }
 
       // If we can't find the user in any API endpoint, they are not an admin
-      console.log(`No admin access found for email: ${email} - denying admin access`);
       return null;
     } catch (error) {
-      console.error('Error fetching Shopify staff member:', error);
       return null;
     }
   }
 
   private async fallbackAdminCheck(email: string): Promise<ShopifyStaffMember | null> {
     // This method is deprecated - API calls are now handled in getShopifyStaffMember
-    console.log('fallbackAdminCheck is deprecated - using proper API integration');
     return null;
   }
 
@@ -347,7 +317,6 @@ export class ShopifyAdminAuth {
       const data = await response.json();
       return data.staff_members || [];
     } catch (error) {
-      console.error('Error fetching Shopify staff members:', error);
       throw error;
     }
   }

@@ -2,17 +2,12 @@ import { getAuth } from 'lib/auth';
 import { deleteCustomerAccessToken, deleteCustomerWithAdminAPI, getCustomerWithAdminAPI } from 'lib/shopify';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { clearWishlistForCustomer } from '../wishlist/route';
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const tokenCookie = cookieStore.get('customer_token');
-    
-    if (!tokenCookie) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const auth = getAuth();
+    await auth.initializeFromCookies();
     const user = await auth.getCurrentUser();
 
     if (!user) {
@@ -73,14 +68,20 @@ export async function POST(request: NextRequest) {
 
     // Delete the customer access token from Shopify
     try {
-      const tokenData = JSON.parse(tokenCookie.value);
-      await deleteCustomerAccessToken(tokenData.access_token);
+      const token = auth.getToken();
+      if (token) {
+        await deleteCustomerAccessToken(token.access_token);
+      }
     } catch (error) {
       console.error('Error deleting access token:', error);
       // Continue with local cleanup even if token deletion fails
     }
 
+    // Clear wishlist data for the customer (permanent deletion)
+    clearWishlistForCustomer(user.id);
+
     // Clear the customer token cookie
+    const cookieStore = await cookies();
     cookieStore.delete('customer_token');
 
     // Return the data export if requested

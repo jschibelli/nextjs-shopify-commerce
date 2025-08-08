@@ -1,27 +1,20 @@
+import { getAuth } from 'lib/auth';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const tokenCookie = cookieStore.get('customer_token');
+    const auth = getAuth();
+    await auth.initializeFromCookies();
+    const user = await auth.getCurrentUser();
     
-    if (tokenCookie) {
-      try {
-        const sessionData = JSON.parse(tokenCookie.value);
-        
-        // If it's an admin session, we might need to clean up admin-specific data
-        if (sessionData.isStaffMember) {
-          console.log('Logging out admin user:', sessionData.email);
-        } else {
-          console.log('Logging out customer user:', sessionData.email);
-        }
-      } catch (error) {
-        console.error('Error parsing session data during logout:', error);
-      }
+    // Log the logout but don't clear wishlist data
+    if (user) {
+      console.log('Logging out customer user:', user.email);
     }
 
     // Clear the session cookie
+    const cookieStore = await cookies();
     cookieStore.delete('customer_token');
 
     return NextResponse.json({ 
@@ -30,6 +23,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Logout error:', error);
+    
+    // Still clear the cookie even if there's an error
+    const cookieStore = await cookies();
+    cookieStore.delete('customer_token');
     
     return NextResponse.json(
       { error: 'Failed to logout. Please try again.' },

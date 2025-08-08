@@ -2,27 +2,21 @@ import { getShopifyAdminAuth } from 'lib/shopify/admin-auth';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import AdminNavigation from './admin-navigation';
 
 async function AdminLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
-  const tokenCookie = cookieStore.get('customer_token');
+  const adminTokenCookie = cookieStore.get('admin_token');
   
-  if (!tokenCookie) {
-    redirect('/login');
-  }
-
+  // Check for admin authentication
   const adminAuth = getShopifyAdminAuth();
   const adminUser = await adminAuth.getCurrentAdminUserFromSession();
 
   if (!adminUser) {
-    redirect('/login?error=shopify_staff_access_denied');
+    redirect('/login?error=admin_access_denied');
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <AdminNavigation adminUser={adminUser} />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Suspense fallback={
           <div className="animate-pulse space-y-6">

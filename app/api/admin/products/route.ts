@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== FETCHING PRODUCTS ===');
-    
     // Check admin authentication
     const adminAuth = getShopifyAdminAuth();
     const adminUser = await adminAuth.getCurrentAdminUserFromSession();
@@ -30,8 +28,6 @@ export async function GET(request: NextRequest) {
     const baseUrl = domain.startsWith('https://') ? domain : `https://${domain}`;
     const endpoint = `${baseUrl}/admin/api/2024-01/products.json`;
 
-    console.log('Fetching products from Shopify Admin API:', endpoint);
-
     const response = await fetch(endpoint, {
       headers: {
         'X-Shopify-Access-Token': adminKey,
@@ -39,11 +35,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log('Shopify Admin API response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Shopify Admin API error:', response.status, errorText);
       if (response.status === 403) {
         return NextResponse.json(
           {
@@ -61,8 +54,6 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     const products = data.products || [];
-    
-    console.log('Shopify Admin API success - products found:', products.length);
 
     return NextResponse.json({
       products,
@@ -71,7 +62,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching products:', error);
     return NextResponse.json({
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -81,8 +71,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== CREATING PRODUCT ===');
-    
     // Check admin authentication
     const adminAuth = getShopifyAdminAuth();
     const adminUser = await adminAuth.getCurrentAdminUserFromSession();
@@ -95,7 +83,6 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log('Creating product with data:', body);
 
     // Get Shopify API credentials
     const domain = process.env.SHOPIFY_STORE_DOMAIN;
@@ -130,8 +117,6 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    console.log('Sending product data to Shopify:', productData);
-
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -141,11 +126,8 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(productData)
     });
 
-    console.log('Shopify Admin API create response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Shopify Admin API create error:', response.status, errorText);
       if (response.status === 403) {
         return NextResponse.json(
           {
@@ -162,7 +144,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('Product created successfully:', data.product.title);
 
     return NextResponse.json({
       product: data.product,
@@ -170,7 +151,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error creating product:', error);
     return NextResponse.json({
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

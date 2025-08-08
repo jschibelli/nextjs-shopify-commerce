@@ -1,9 +1,16 @@
-import { cookies } from 'next/headers';
+import { getAuth } from 'lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
+    const auth = getAuth();
+    await auth.initializeFromCookies();
+    const user = await auth.getCurrentUser();
+    
+    // Log the logout but don't clear wishlist data
+    if (user) {
+      console.log('Logging out user:', user.email);
+    }
     
     // Clear the admin session cookie
     const response = NextResponse.json({ success: true });

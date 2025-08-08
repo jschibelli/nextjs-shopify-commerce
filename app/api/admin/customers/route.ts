@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== FETCHING CUSTOMERS ===');
-    
     // Check admin authentication
     const adminAuth = getShopifyAdminAuth();
     const adminUser = await adminAuth.getCurrentAdminUserFromSession();
@@ -30,8 +28,6 @@ export async function GET(request: NextRequest) {
     const baseUrl = domain.startsWith('https://') ? domain : `https://${domain}`;
     const endpoint = `${baseUrl}/admin/api/2024-01/customers.json?limit=50`;
 
-    console.log('Fetching customers from Shopify Admin API:', endpoint);
-
     const response = await fetch(endpoint, {
       headers: {
         'X-Shopify-Access-Token': adminKey,
@@ -39,11 +35,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log('Shopify Admin API response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Shopify Admin API error:', response.status, errorText);
       if (response.status === 403) {
         return NextResponse.json(
           {
@@ -61,8 +54,6 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     const customers = data.customers || [];
-    
-    console.log('Shopify Admin API success - customers found:', customers.length);
 
     // Calculate customer statistics
     const customerStats = {
@@ -85,7 +76,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching customers:', error);
     return NextResponse.json({
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

@@ -84,6 +84,9 @@ function Verify2FAForm() {
           // Clear temporary data
           localStorage.removeItem('2fa_userId');
           
+          // Dispatch login success event for components to react to
+          window.dispatchEvent(new CustomEvent('login-success'));
+          
           toast({
             title: "2FA Verified",
             description: "Two-factor authentication verified successfully",

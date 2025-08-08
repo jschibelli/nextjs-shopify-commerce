@@ -36,16 +36,27 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('/api/account/wishlist');
-      if (response.status === 401) {
-        // User is not authenticated
+      const response = await fetch('/api/auth/check-session');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.isAuthenticated) {
+          // Don't set authenticated for admin users - they don't have wishlists
+          if (data.isStaffMember) {
+            setIsAuthenticated(false);
+            setWishlistItems([]);
+            return false;
+          }
+          setIsAuthenticated(true);
+          return true;
+        } else {
+          setIsAuthenticated(false);
+          setWishlistItems([]);
+          return false;
+        }
+      } else {
         setIsAuthenticated(false);
-        setWishlistItems([]); // Clear wishlist for logged out users
+        setWishlistItems([]);
         return false;
-      } else if (response.ok) {
-        // User is authenticated
-        setIsAuthenticated(true);
-        return true;
       }
     } catch (error) {
       console.error('Failed to check auth status:', error);
@@ -53,12 +64,24 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       setWishlistItems([]);
       return false;
     }
-    return false;
   };
 
   const fetchWishlistItems = async () => {
     try {
       setIsLoading(true);
+      
+      // First check if user is admin
+      const authResponse = await fetch('/api/auth/check-session');
+      if (authResponse.ok) {
+        const authData = await authResponse.json();
+        if (authData.isStaffMember) {
+          // Admin users don't have wishlists
+          setIsAuthenticated(false);
+          setWishlistItems([]);
+          return;
+        }
+      }
+      
       const response = await fetch('/api/account/wishlist');
       
       if (response.status === 401) {
@@ -149,7 +172,20 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     };
 
     initializeWishlist();
-  }, []);
+
+    // Set up periodic authentication check (every 30 seconds)
+    const authCheckInterval = setInterval(async () => {
+      const isAuth = await checkAuthStatus();
+      if (isAuth && wishlistItems.length === 0) {
+        // If authenticated but no wishlist items, try to fetch them
+        await fetchWishlistItems();
+      }
+    }, 30000);
+
+    return () => {
+      clearInterval(authCheckInterval);
+    };
+  }, [wishlistItems.length]);
 
   // Listen for authentication changes (login/logout)
   useEffect(() => {
@@ -164,11 +200,32 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        // Page became visible, check auth status
-        setTimeout(() => {
-          refreshWishlist();
+        // Page became visible, check auth status and refresh wishlist
+        setTimeout(async () => {
+          const isAuth = await checkAuthStatus();
+          if (isAuth) {
+            await fetchWishlistItems();
+          }
         }, 100);
       }
+    };
+
+    const handleLogoutSuccess = () => {
+      // Clear client-side wishlist state on logout, but don't clear server data
+      console.log('Wishlist: Logout event received, clearing client-side wishlist state');
+      setIsAuthenticated(false);
+      setWishlistItems([]);
+    };
+
+    const handleLoginSuccess = () => {
+      // Refresh wishlist when user logs in
+      console.log('Wishlist: Login success event received, refreshing wishlist');
+      setTimeout(async () => {
+        const isAuth = await checkAuthStatus();
+        if (isAuth) {
+          await fetchWishlistItems();
+        }
+      }, 500); // Small delay to ensure session is set
     };
 
     // Listen for storage changes (cross-tab logout)
@@ -176,10 +233,18 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     
     // Listen for page visibility changes (user navigated back)
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Listen for logout success event
+    window.addEventListener('logout-success', handleLogoutSuccess);
+    
+    // Listen for login success event
+    window.addEventListener('login-success', handleLoginSuccess);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('logout-success', handleLogoutSuccess);
+      window.removeEventListener('login-success', handleLoginSuccess);
     };
   }, []);
 

@@ -5,7 +5,7 @@ import { EnhancedCartProvider } from 'components/cart/enhanced-cart-context';
 import EnhancedCartModal from 'components/cart/enhanced-cart-modal';
 import DevRevalidateButton from 'components/dev-revalidate-button';
 import Footer from 'components/layout/footer';
-import Navbar from 'components/layout/navbar';
+import DynamicNavigation from 'components/layout/navbar/dynamic-navigation';
 import { ThemeProvider } from 'components/theme-provider';
 import { WelcomeToast } from 'components/welcome-toast';
 import { WishlistProvider } from 'components/wishlist/wishlist-context';
@@ -85,7 +85,7 @@ export default function RootLayout({
           <EnhancedCartProvider cartPromise={cart}>
             <WishlistProvider>
               <div className="flex min-h-screen flex-col">
-                <Navbar />
+                <DynamicNavigation />
                 <main className="flex-1">
                   {children}
                 </main>
