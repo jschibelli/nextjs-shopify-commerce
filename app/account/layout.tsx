@@ -1,3 +1,5 @@
+import { AccountBreadcrumb } from 'components/account-breadcrumb';
+import { AccountNavigation } from 'components/account-navigation';
 import { LogoutButton } from 'components/logout-button';
 import { getAuth } from 'lib/auth';
 import { cookies } from 'next/headers';
@@ -38,74 +40,57 @@ async function AccountLayout({ children }: { children: React.ReactNode }) {
 
     return (
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">My Account</h1>
-              <p className="text-muted-foreground">Welcome back, {user.firstName || user.email}</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+          {/* Breadcrumb */}
+          <AccountBreadcrumb />
+          
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+            <div className="mb-4 sm:mb-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">My Account</h1>
+              <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                Welcome back, {user.firstName || user.email}
+              </p>
             </div>
             <LogoutButton 
               variant="outline" 
               redirectUrl="/"
-              className="flex items-center"
+              className="flex items-center justify-center sm:justify-start w-full sm:w-auto"
             >
               Logout
             </LogoutButton>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Sidebar Navigation */}
-            <div className="lg:col-span-1">
-              <nav className="space-y-2">
-                <a
-                  href="/account"
-                  className="block px-4 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
-                >
-                  Overview
-                </a>
-                <a
-                  href="/account/orders"
-                  className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-card border border-transparent rounded-lg transition-colors"
-                >
-                  Orders
-                </a>
-                <a
-                  href="/account/addresses"
-                  className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-card border border-transparent rounded-lg transition-colors"
-                >
-                  Addresses
-                </a>
-                <a
-                  href="/account/wishlist"
-                  className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-card border border-transparent rounded-lg transition-colors"
-                >
-                  Wishlist
-                </a>
-                <a
-                  href="/account/settings"
-                  className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-card border border-transparent rounded-lg transition-colors"
-                >
-                  Settings
-                </a>
-              </nav>
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
+            {/* Navigation Sidebar */}
+            <div className="lg:col-span-1 order-2 lg:order-1">
+              <AccountNavigation />
             </div>
-            
-            {/* Main Content */}
-            <div className="lg:col-span-3">
-              <Suspense fallback={<div className="animate-pulse space-y-4"><div className="h-8 bg-muted rounded" /><div className="h-64 bg-muted rounded" /></div>}>
-                {children}
-              </Suspense>
+
+            {/* Main Content Area */}
+            <div className="lg:col-span-3 order-1 lg:order-2">
+              <div className="bg-card border border-border rounded-lg shadow-sm min-h-[400px]">
+                <Suspense fallback={
+                  <div className="p-6">
+                    <div className="animate-pulse space-y-4">
+                      <div className="h-6 bg-muted rounded w-1/4"></div>
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                    </div>
+                  </div>
+                }>
+                  {children}
+                </Suspense>
+              </div>
             </div>
           </div>
         </div>
       </div>
     );
   } catch (error) {
-    console.error('Authentication error in account layout:', error);
-    // Clear any invalid cookies and redirect to login
-    const cookieStore = await cookies();
-    cookieStore.delete('customer_token');
-    redirect('/login?error=authentication_failed');
+    console.error('Error in AccountLayout:', error);
+    redirect('/login?error=session_expired');
   }
 }
 

@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from '@/components/ui/use-toast';
 import { createProductReviewClient, getProductReviewsClient, getProductReviewStatsClient } from 'lib/shopify/reviews-client';
 import { ProductReview, ReviewStats } from 'lib/shopify/types';
+import { useAuth } from 'lib/use-auth';
+import { LogIn } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { ReviewForm } from './review-form';
 import { ReviewItem } from './review-item';
@@ -17,6 +19,7 @@ interface ProductReviewsProps {
 }
 
 export function ProductReviews({ productId, productTitle, className }: ProductReviewsProps) {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [stats, setStats] = useState<ReviewStats | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,7 +87,19 @@ export function ProductReviews({ productId, productTitle, className }: ProductRe
     }
   };
 
-  if (isLoading) {
+  const handleWriteReviewClick = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to write a review.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    setShowReviewForm(true);
+  };
+
+  if (isLoading || authLoading) {
     return (
       <div className={`space-y-6 ${className}`}>
         <div className="animate-pulse">
@@ -105,7 +120,11 @@ export function ProductReviews({ productId, productTitle, className }: ProductRe
         <h2 className="text-2xl font-bold">Customer Reviews</h2>
         <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
           <DialogTrigger asChild>
-            <Button variant="outline" disabled={isSubmitting}>
+            <Button 
+              variant="outline" 
+              disabled={isSubmitting}
+              onClick={handleWriteReviewClick}
+            >
               {isSubmitting ? 'Submitting...' : 'Write a Review'}
             </Button>
           </DialogTrigger>
@@ -144,23 +163,47 @@ export function ProductReviews({ productId, productTitle, className }: ProductRe
             <p className="text-lg font-medium">No reviews yet</p>
             <p className="text-sm">Be the first to review this product!</p>
           </div>
-          <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
-            <DialogTrigger asChild>
-              <Button disabled={isSubmitting}>
-                {isSubmitting ? 'Submitting...' : 'Write the First Review'}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Write a Review</DialogTitle>
-              </DialogHeader>
-              <ReviewForm
-                productId={productId}
-                productTitle={productTitle}
-                onSubmit={handleSubmitReview}
-              />
-            </DialogContent>
-          </Dialog>
+          {isAuthenticated ? (
+            <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
+              <DialogTrigger asChild>
+                <Button disabled={isSubmitting}>
+                  {isSubmitting ? 'Submitting...' : 'Write the First Review'}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Write a Review</DialogTitle>
+                </DialogHeader>
+                <ReviewForm
+                  productId={productId}
+                  productTitle={productTitle}
+                  onSubmit={handleSubmitReview}
+                />
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <LogIn className="h-4 w-4" />
+                <span className="text-sm">Login required to write reviews</span>
+              </div>
+              <div className="flex gap-2 justify-center">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.location.href = '/login'}
+                >
+                  Log In
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={() => window.location.href = '/signup'}
+                >
+                  Create Account
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -13,6 +13,21 @@
       "status": "deleted",
       "moderated_by": "admin",
       "moderated_at": "2025-08-08T01:38:11.796Z"
+    },
+    {
+      "id": 1754619217091,
+      "product_id": "gid://shopify/Product/9000437317865",
+      "reviewer_name": "John Schibelli",
+      "reviewer_email": "jschibelli@gmail.com",
+      "rating": 5,
+      "title": "FL to CO Co no",
+      "content": "Did",
+      "created_at": "2025-08-08T02:13:37.091Z",
+      "updated_at": "2025-08-08T04:20:42.924Z",
+      "status": "approved",
+      "moderated_by": "jschibelli@gmail.com",
+      "moderated_at": "2025-08-08T04:20:42.924Z",
+      "moderation_notes": "Customer edited their own review"
     }
   ],
   "gid://shopify/Product/8999688732905": [

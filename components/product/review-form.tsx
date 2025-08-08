@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { Star } from 'lucide-react';
-import { useState } from 'react';
+import { useAuth } from 'lib/use-auth';
+import { LogIn, Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface ReviewFormProps {
   productId: string;
@@ -22,6 +23,7 @@ interface ReviewFormProps {
 }
 
 export function ReviewForm({ productId, productTitle, onSubmit, className }: ReviewFormProps) {
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [title, setTitle] = useState('');
@@ -31,9 +33,30 @@ export function ReviewForm({ productId, productTitle, onSubmit, className }: Rev
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
+  // Debug authentication state
+  console.log('ReviewForm - Auth State:', { isAuthenticated, isLoading, user: user?.email });
+
+  // Auto-populate user information when authenticated
+  useEffect(() => {
+    if (user && isAuthenticated) {
+      const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+      setAuthorName(fullName || '');
+      setAuthorEmail(user.email || '');
+    }
+  }, [user, isAuthenticated]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!isAuthenticated) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to write a review.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     if (rating === 0) {
       toast({
         title: 'Rating Required',
@@ -76,12 +99,10 @@ export function ReviewForm({ productId, productTitle, onSubmit, className }: Rev
       setRating(0);
       setTitle('');
       setContent('');
-      setAuthorName('');
-      setAuthorEmail('');
 
       toast({
         title: 'Review Submitted Successfully!',
-        description: 'Thank you for your review. It has been submitted and is pending approval by our moderation team. You will see it appear on the product page once it has been approved.',
+        description: 'Thank you for your review. It has been submitted and is pending approval by our moderation team. You can view your reviews in your account dashboard.',
       });
     } catch (error) {
       toast({
@@ -94,6 +115,52 @@ export function ReviewForm({ productId, productTitle, onSubmit, className }: Rev
     }
   };
 
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className={`space-y-6 ${className}`}>
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="space-y-3">
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className={`space-y-6 ${className}`}>
+        <div className="text-center py-8">
+          <LogIn className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Login Required</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            You need to be logged in to write a review for {productTitle}
+          </p>
+          <div className="space-y-2">
+            <Button 
+              onClick={() => window.location.href = '/login'} 
+              className="w-full"
+            >
+              Log In
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.href = '/signup'} 
+              className="w-full"
+            >
+              Create Account
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className={`space-y-6 ${className}`}>
       <div>
@@ -104,6 +171,11 @@ export function ReviewForm({ productId, productTitle, onSubmit, className }: Rev
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
           <p className="text-sm text-blue-800">
             <strong>Note:</strong> All reviews are moderated before being published. Your review will be visible on the product page once it has been approved by our team.
+          </p>
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-green-800">
+            <strong>Welcome back, {user?.firstName || 'User'}!</strong> Your account information has been pre-filled for your convenience.
           </p>
         </div>
       </div>
@@ -162,7 +234,7 @@ export function ReviewForm({ productId, productTitle, onSubmit, className }: Rev
         />
       </div>
 
-      {/* Author Info */}
+      {/* Author Info - Read-only for authenticated users */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="authorName">Name *</Label>
@@ -185,6 +257,7 @@ export function ReviewForm({ productId, productTitle, onSubmit, className }: Rev
             placeholder="your.email@example.com"
             className="mt-2"
             required
+            readOnly
           />
         </div>
       </div>
