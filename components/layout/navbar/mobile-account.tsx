@@ -16,7 +16,11 @@ interface UserSession {
   isStaffMember: boolean;
 }
 
-export default function MobileAccount() {
+interface MobileAccountProps {
+  onClose?: () => void;
+}
+
+export default function MobileAccount({ onClose }: MobileAccountProps) {
   const [sessionData, setSessionData] = useState<UserSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -69,7 +73,7 @@ export default function MobileAccount() {
 
   if (!sessionData?.isAuthenticated || !sessionData?.user) {
     return (
-      <Link href="/login">
+      <Link href="/login" onClick={onClose}>
         <Button variant="ghost" size="sm">
           <User className="h-4 w-4 mr-2" />
           Sign In
@@ -81,7 +85,7 @@ export default function MobileAccount() {
   // If user is a staff member, show admin account link
   if (sessionData.isStaffMember) {
     return (
-      <Link href="/admin">
+      <Link href="/admin" onClick={onClose}>
         <Button variant="ghost" size="sm">
           <User className="h-4 w-4 mr-2" />
           Admin
@@ -92,7 +96,7 @@ export default function MobileAccount() {
 
   // For regular customers, show account link
   return (
-    <Link href="/account">
+    <Link href="/account" onClick={onClose}>
       <Button variant="ghost" size="sm">
         <User className="h-4 w-4 mr-2" />
         Account

@@ -1,6 +1,6 @@
 "use client"
 
-import { SessionTracker } from 'components/session-tracker';
+import SessionTracker from 'components/session-tracker';
 
 interface AccountClientWrapperProps {
   children: React.ReactNode;
@@ -8,8 +8,9 @@ interface AccountClientWrapperProps {
 
 export function AccountClientWrapper({ children }: AccountClientWrapperProps) {
   return (
-    <SessionTracker>
+    <>
+      <SessionTracker />
       {children}
-    </SessionTracker>
+    </>
   );
 } 
