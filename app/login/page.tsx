@@ -67,6 +67,8 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
       if (adminResponse.ok) {
         const adminData = await adminResponse.json();
         console.log('Admin login successful, redirecting to:', adminData.redirect);
+        // Trigger login success event
+        window.dispatchEvent(new CustomEvent('login-success'));
         router.push(adminData.redirect);
         return;
       }
@@ -93,6 +95,8 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
           console.log('Login successful, redirecting to:', redirectUrl, { 
             isStaffMember: data.isStaffMember 
           });
+          // Trigger login success event
+          window.dispatchEvent(new CustomEvent('login-success'));
           router.push(redirectUrl);
         }
       } else {

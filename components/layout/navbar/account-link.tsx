@@ -1,18 +1,23 @@
 'use client';
 
 import {
+    BarChart3,
     ChevronDown,
     Crown,
     Heart,
     LogOut,
     MapPin,
+    MessageSquare,
     Package,
     Settings,
-    Shield,
+    Star,
+    Tag,
+    Trophy,
     User,
     UserCheck
 } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -36,57 +41,122 @@ interface UserSession {
 }
 
 export default function AccountLink() {
+  const router = useRouter();
+  const pathname = usePathname();
   const [accountUrl, setAccountUrl] = useState('/account');
   const [sessionData, setSessionData] = useState<UserSession | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  useEffect(() => {
-    const checkAuthStatus = () => {
-      try {
-        const cookies = document.cookie.split(';');
-        const customerTokenCookie = cookies.find(cookie => 
-          cookie.trim().startsWith('customer_token=')
-        );
+  const checkAuthStatus = async () => {
+    console.log('AccountLink: Checking auth status...');
+    try {
+      const response = await fetch('/api/auth/check-session', {
+        method: 'GET',
+        credentials: 'include'
+      });
 
-        if (customerTokenCookie) {
-          const tokenValue = customerTokenCookie.split('=')[1];
-          if (tokenValue) {
-            const parsedSession = JSON.parse(decodeURIComponent(tokenValue));
-            setSessionData(parsedSession);
-            setIsAuthenticated(true);
-            
-            if (parsedSession.isStaffMember) {
-              setAccountUrl('/admin');
-            } else {
-              setAccountUrl('/account');
-            }
+      console.log('AccountLink: Response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('AccountLink: Response data:', data);
+        
+        if (data.isAuthenticated && data.user) {
+          console.log('AccountLink: User authenticated:', data.user.email);
+          setIsAuthenticated(true);
+          setSessionData({
+            isStaffMember: data.isStaffMember,
+            user: data.user
+          });
+          
+          if (data.isStaffMember) {
+            setAccountUrl('/admin');
           } else {
-            setIsAuthenticated(false);
-            setAccountUrl('/login');
+            setAccountUrl('/account');
           }
         } else {
+          console.log('AccountLink: User not authenticated');
           setIsAuthenticated(false);
+          setSessionData(null);
           setAccountUrl('/login');
         }
-      } catch (error) {
-        console.error('Error parsing session data:', error);
+      } else {
+        console.log('AccountLink: Response not ok');
         setIsAuthenticated(false);
+        setSessionData(null);
         setAccountUrl('/login');
-      } finally {
-        setIsLoading(false);
       }
+    } catch (error) {
+      console.error('AccountLink: Error checking auth status:', error);
+      setIsAuthenticated(false);
+      setSessionData(null);
+      setAccountUrl('/login');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Add a small delay to ensure session is set
+    const timer = setTimeout(() => {
+      checkAuthStatus();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [pathname]); // Re-check when pathname changes
+
+  // Also check on mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, []); // Only run on mount
+
+  // Listen for login success events
+  useEffect(() => {
+    const handleLoginSuccess = () => {
+      console.log('AccountLink: Login success event received, refreshing auth status');
+      setTimeout(() => checkAuthStatus(), 500); // Small delay to ensure session is set
     };
 
-    checkAuthStatus();
+    window.addEventListener('login-success', handleLoginSuccess);
+    
+    return () => {
+      window.removeEventListener('login-success', handleLoginSuccess);
+    };
   }, []);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.href = '/';
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (response.ok) {
+        // Clear any client-side state
+        localStorage.removeItem('customer_token');
+        sessionStorage.removeItem('customer_token');
+        localStorage.removeItem('current_session_id');
+        
+        // Reset state
+        setIsAuthenticated(false);
+        setSessionData(null);
+        setAccountUrl('/login');
+        
+        // Redirect to home page
+        router.push('/');
+        router.refresh();
+      } else {
+        console.error('Logout failed');
+        // Still redirect even if logout API fails
+        router.push('/');
+        router.refresh();
+      }
     } catch (error) {
       console.error('Logout failed:', error);
+      // Redirect even if there's an error
+      router.push('/');
+      router.refresh();
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -127,6 +197,14 @@ export default function AccountLink() {
   const getUserEmail = () => {
     return sessionData?.user?.email || '';
   };
+
+  // Debug logging
+  console.log('AccountLink: Current state:', {
+    isLoading,
+    isAuthenticated,
+    sessionData: sessionData?.user?.email,
+    accountUrl
+  });
 
   if (isLoading) {
     return (
@@ -189,6 +267,22 @@ export default function AccountLink() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
+        {/* Account Management */}
+        <DropdownMenuItem asChild>
+          <Link href={accountUrl} className="flex items-center space-x-2">
+            <User className="h-4 w-4" />
+            <span>My Account</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={`${accountUrl}/settings`} className="flex items-center space-x-2">
+            <Settings className="h-4 w-4" />
+            <span>Settings</span>
+          </Link>
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
         {/* Quick Actions */}
         <div className="px-2 py-1.5">
           <p className="text-xs font-medium text-muted-foreground mb-2">Quick Actions</p>
@@ -212,9 +306,9 @@ export default function AccountLink() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={`${accountUrl}/security`} className="flex items-center space-x-2">
-                <Shield className="h-4 w-4" />
-                <span className="text-xs">Security</span>
+              <Link href={`${accountUrl}/loyalty`} className="flex items-center space-x-2">
+                <Star className="h-4 w-4" />
+                <span className="text-xs">Loyalty</span>
               </Link>
             </DropdownMenuItem>
           </div>
@@ -222,17 +316,29 @@ export default function AccountLink() {
         
         <DropdownMenuSeparator />
         
-        {/* Account Management */}
+        {/* Account Navigation */}
         <DropdownMenuItem asChild>
-          <Link href={accountUrl} className="flex items-center space-x-2">
-            <User className="h-4 w-4" />
-            <span>My Account</span>
+          <Link href={`${accountUrl}/support`} className="flex items-center space-x-2">
+            <MessageSquare className="h-4 w-4" />
+            <span>Support</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href={`${accountUrl}/settings`} className="flex items-center space-x-2">
-            <Settings className="h-4 w-4" />
-            <span>Settings</span>
+          <Link href={`${accountUrl}/analytics`} className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
+            <span>Analytics</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={`${accountUrl}/tags`} className="flex items-center space-x-2">
+            <Tag className="h-4 w-4" />
+            <span>Tags</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={`${accountUrl}/gamification`} className="flex items-center space-x-2">
+            <Trophy className="h-4 w-4" />
+            <span>Gamification</span>
           </Link>
         </DropdownMenuItem>
         
@@ -241,10 +347,20 @@ export default function AccountLink() {
         {/* Logout */}
         <DropdownMenuItem 
           onClick={handleLogout}
+          disabled={isLoggingOut}
           className="flex items-center space-x-2 text-red-600 focus:text-red-600"
         >
-          <LogOut className="h-4 w-4" />
-          <span>Sign Out</span>
+          {isLoggingOut ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+              <span>Signing out...</span>
+            </>
+          ) : (
+            <>
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
+            </>
+          )}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

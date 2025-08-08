@@ -1,6 +1,5 @@
+import { AccountSidebar } from '@/components/account-sidebar';
 import { AccountBreadcrumb } from 'components/account-breadcrumb';
-import { AccountNavigation } from 'components/account-navigation';
-import { LogoutButton } from 'components/logout-button';
 import { getAuth } from 'lib/auth';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -45,31 +44,22 @@ async function AccountLayout({ children }: { children: React.ReactNode }) {
           <AccountBreadcrumb />
           
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
-            <div className="mb-4 sm:mb-0">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">My Account</h1>
-              <p className="text-sm sm:text-base text-muted-foreground mt-1">
-                Welcome back, {user.firstName || user.email}
-              </p>
-            </div>
-            <LogoutButton 
-              variant="outline" 
-              redirectUrl="/"
-              className="flex items-center justify-center sm:justify-start w-full sm:w-auto"
-            >
-              Logout
-            </LogoutButton>
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">My Account</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+              Welcome back, {user.firstName || user.email}
+            </p>
           </div>
           
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
-            {/* Navigation Sidebar */}
-            <div className="lg:col-span-1 order-2 lg:order-1">
-              <AccountNavigation />
+            {/* Navigation Sidebar - Desktop Only */}
+            <div className="hidden lg:block lg:col-span-1">
+              <AccountSidebar />
             </div>
 
             {/* Main Content Area */}
-            <div className="lg:col-span-3 order-1 lg:order-2">
+            <div className="lg:col-span-3">
               <div className="bg-card border border-border rounded-lg shadow-sm min-h-[400px]">
                 <Suspense fallback={
                   <div className="p-6">

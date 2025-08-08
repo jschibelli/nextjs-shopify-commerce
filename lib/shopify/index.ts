@@ -1811,6 +1811,11 @@ export async function updateCustomerLoyaltyPointsWithAdminAPI({
       const numericCustomerId = extractNumericId(customerId);
       const domain = process.env.SHOPIFY_STORE_DOMAIN;
       const adminKey = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+      
+      if (!domain || !adminKey) {
+        throw new Error('SHOPIFY_STORE_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN are required');
+      }
+      
       const baseUrl = domain.startsWith('https://') ? domain : `https://${domain}`;
       const endpoint = `${baseUrl}/admin/api/2023-01/customers/${numericCustomerId}/metafields/${metafieldId}.json`;
 
