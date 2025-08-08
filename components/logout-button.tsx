@@ -39,6 +39,7 @@ export function LogoutButton({
         // Clear any client-side state if needed
         localStorage.removeItem('customer_token');
         sessionStorage.removeItem('customer_token');
+        localStorage.removeItem('current_session_id');
         
         // Redirect to the specified URL or home page
         router.push(redirectUrl);

@@ -80,8 +80,8 @@ export function ReviewForm({ productId, productTitle, onSubmit, className }: Rev
       setAuthorEmail('');
 
       toast({
-        title: 'Review Submitted',
-        description: 'Thank you for your review! It will be visible once approved.',
+        title: 'Review Submitted Successfully!',
+        description: 'Thank you for your review. It has been submitted and is pending approval by our moderation team. You will see it appear on the product page once it has been approved.',
       });
     } catch (error) {
       toast({
@@ -101,6 +101,11 @@ export function ReviewForm({ productId, productTitle, onSubmit, className }: Rev
         <p className="text-sm text-muted-foreground mb-4">
           Share your experience with {productTitle}
         </p>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-blue-800">
+            <strong>Note:</strong> All reviews are moderated before being published. Your review will be visible on the product page once it has been approved by our team.
+          </p>
+        </div>
       </div>
 
       {/* Rating */}

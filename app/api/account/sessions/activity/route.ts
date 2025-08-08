@@ -9,7 +9,10 @@ export async function POST(request: NextRequest) {
     const tokenCookie = cookieStore.get('customer_token');
     
     if (!tokenCookie) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return NextResponse.json({ 
+        success: true,
+        message: 'Not authenticated, activity tracking skipped' 
+      }, { status: 200 });
     }
 
     let sessionId;
@@ -65,6 +68,7 @@ export async function POST(request: NextRequest) {
       const user = await auth.getCurrentUser();
 
       if (!user) {
+        console.log('Session activity: User not found, likely logged out');
         return NextResponse.json({
           success: true,
           message: 'User not found, activity tracking skipped'
@@ -92,14 +96,14 @@ export async function POST(request: NextRequest) {
       });
     } catch (error) {
       // If user is not found (e.g., after logout), just return success
-      console.log('User not found for session activity update, likely logged out');
+      console.log('Session activity: User not found for session activity update, likely logged out');
       return NextResponse.json({
         success: true,
         message: 'Session activity skipped - user not found'
       });
     }
   } catch (error) {
-    console.error('Error updating session activity:', error);
+    console.error('Session activity: Error updating session activity:', error);
     return NextResponse.json({ 
       success: true,
       message: 'Session activity failed, but continuing normally' 

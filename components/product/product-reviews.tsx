@@ -21,6 +21,7 @@ export function ProductReviews({ productId, productTitle, className }: ProductRe
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -54,16 +55,32 @@ export function ProductReviews({ productId, productTitle, className }: ProductRe
     authorEmail: string;
   }) => {
     try {
+      setIsSubmitting(true);
       await createProductReviewClient({
         productId,
         ...reviewData
       });
       
       setShowReviewForm(false);
-      await loadReviews(); // Reload reviews to show the new one
+      
+      // Show success message about moderation
+      toast({
+        title: 'Review Submitted Successfully!',
+        description: 'Thank you for your review. It has been submitted and is pending approval by our moderation team. You will see it appear on the product page once it has been approved.',
+      });
+      
+      // Note: We don't reload reviews here because the new review is pending
+      // and won't show up in the public reviews list until approved
     } catch (error) {
       console.error('Error submitting review:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to submit review. Please try again.',
+        variant: 'destructive',
+      });
       throw error; // Re-throw to let the form handle the error
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -88,7 +105,9 @@ export function ProductReviews({ productId, productTitle, className }: ProductRe
         <h2 className="text-2xl font-bold">Customer Reviews</h2>
         <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
           <DialogTrigger asChild>
-            <Button variant="outline">Write a Review</Button>
+            <Button variant="outline" disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Write a Review'}
+            </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -127,7 +146,9 @@ export function ProductReviews({ productId, productTitle, className }: ProductRe
           </div>
           <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
             <DialogTrigger asChild>
-              <Button>Write the First Review</Button>
+              <Button disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting...' : 'Write the First Review'}
+              </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>

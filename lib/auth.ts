@@ -63,7 +63,19 @@ export class CustomerAccountAuth {
       return customer;
     } catch (error) {
       console.error('Error getting current user:', error);
-      // Token might be invalid, clear it but don't delete cookie here
+      
+      // If the error is "Customer not found", the token might be invalid
+      // or the customer might have been deleted from Shopify
+      if (error instanceof Error && error.message === 'Customer not found') {
+        console.log('Customer not found in Shopify, clearing invalid token');
+        // Clear the invalid token
+        this.token = null;
+        const cookieStore = await cookies();
+        cookieStore.delete('customer_token');
+        return null;
+      }
+      
+      // For other errors, just clear the token but don't delete cookie yet
       this.token = null;
       return null;
     }

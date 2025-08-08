@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, HelpCircle, Home, Menu, Search, ShoppingBag, User, X } from 'lucide-react';
+import { Heart, HelpCircle, Home, Menu, Search, ShoppingBag, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useWishlist } from '@/components/wishlist/wishlist-context';
 import WishlistModal from '@/components/wishlist/wishlist-modal';
+import AccountLink from './account-link';
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -87,11 +88,7 @@ export default function Navbar() {
               <Button variant="ghost" size="icon">
                 <HelpCircle className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/account">
-                  <User className="h-5 w-5" />
-                </Link>
-              </Button>
+              <AccountLink />
               <Button variant="ghost" size="icon" className="relative" onClick={openWishlist}>
                 <Heart className="h-5 w-5" />
                 {wishlistCount > 0 && (
@@ -239,11 +236,7 @@ export default function Navbar() {
                     <Button variant="ghost" size="icon" className="h-10 w-10">
                       <HelpCircle className="h-5 w-5" />
                     </Button>
-                    <Button variant="ghost" size="icon" asChild className="h-10 w-10">
-                      <Link href="/account" onClick={closeMobileMenu}>
-                        <User className="h-5 w-5" />
-                      </Link>
-                    </Button>
+                    <AccountLink />
                     <Button variant="ghost" size="icon" className="relative h-10 w-10" onClick={openWishlist}>
                       <Heart className="h-5 w-5" />
                       {wishlistCount > 0 && (

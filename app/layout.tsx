@@ -1,5 +1,5 @@
 import { GeistSans } from 'geist/font/sans';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
 import { EnhancedCartProvider } from 'components/cart/enhanced-cart-context';
 import EnhancedCartModal from 'components/cart/enhanced-cart-modal';
@@ -28,12 +28,6 @@ export const metadata: Metadata = {
     }
   ],
   creator: 'Vercel',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -62,6 +56,13 @@ export const metadata: Metadata = {
   verification: {
     google: 'google-site-verification-code'
   }
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

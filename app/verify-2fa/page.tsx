@@ -89,8 +89,12 @@ function Verify2FAForm() {
             description: "Two-factor authentication verified successfully",
           });
 
-          // Redirect to account page
-          router.push('/account');
+          // Redirect based on user type
+          const redirectUrl = result.redirect || '/account';
+          console.log('2FA verified, redirecting to:', redirectUrl, { 
+            isStaffMember: result.isStaffMember 
+          });
+          router.push(redirectUrl);
         } else {
           toast({
             title: "Error",

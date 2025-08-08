@@ -1,42 +1,39 @@
-import { getAuth } from 'lib/auth';
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = getAuth();
+    const cookieStore = await cookies();
+    const tokenCookie = cookieStore.get('customer_token');
     
-    // Attempt to logout from Shopify (don't fail if this errors)
-    try {
-      await auth.logout();
-    } catch (error) {
-      console.error('Error during Shopify logout:', error);
-      // Continue with local logout even if Shopify logout fails
+    if (tokenCookie) {
+      try {
+        const sessionData = JSON.parse(tokenCookie.value);
+        
+        // If it's an admin session, we might need to clean up admin-specific data
+        if (sessionData.isStaffMember) {
+          console.log('Logging out admin user:', sessionData.email);
+        } else {
+          console.log('Logging out customer user:', sessionData.email);
+        }
+      } catch (error) {
+        console.error('Error parsing session data during logout:', error);
+      }
     }
 
-    // Get the redirect URL from the request body or use default
-    const { redirectUrl = '/' } = await request.json().catch(() => ({}));
+    // Clear the session cookie
+    cookieStore.delete('customer_token');
 
-    // Create response with redirect
-    const response = NextResponse.json({ 
+    return NextResponse.json({ 
       success: true, 
-      message: 'Logged out successfully',
-      redirectUrl 
+      message: 'Logged out successfully' 
     });
-
-    // Set the cookie deletion in the response
-    response.cookies.delete('customer_token');
-
-    return response;
   } catch (error) {
     console.error('Logout error:', error);
     
-    // Even if there's an error, try to clear the cookie
-    const response = NextResponse.json(
-      { error: 'Failed to logout properly, but session cleared' },
+    return NextResponse.json(
+      { error: 'Failed to logout. Please try again.' },
       { status: 500 }
     );
-    
-    response.cookies.delete('customer_token');
-    return response;
   }
 } 

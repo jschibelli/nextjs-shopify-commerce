@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { productId, reviewId } = body;
+    const { productId, reviewId, moderator = 'admin', notes } = body;
 
     if (!productId || !reviewId) {
       return NextResponse.json(
@@ -13,10 +13,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const success = approveReview(productId, reviewId);
+    const success = approveReview(productId, reviewId, moderator, notes);
 
     if (success) {
-      return NextResponse.json({ success: true, message: 'Review approved' });
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Review approved',
+        data: { productId, reviewId, moderator, notes }
+      });
     } else {
       return NextResponse.json(
         { error: 'Review not found' },

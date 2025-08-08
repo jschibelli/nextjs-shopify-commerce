@@ -33,8 +33,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Set a flag in the session to indicate 2FA is verified
+    // Get temp session to check if user is staff member
     const cookieStore = await cookies();
+    const tempSessionCookie = cookieStore.get('temp_session');
+    let isStaffMember = false;
+
+    if (tempSessionCookie) {
+      try {
+        const tempSession = JSON.parse(tempSessionCookie.value);
+        isStaffMember = tempSession.isStaffMember || false;
+      } catch (error) {
+        console.error('Error parsing temp session:', error);
+      }
+    }
+
+    // Set a flag in the session to indicate 2FA is verified
     cookieStore.set('2fa_verified', 'true', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -42,8 +55,16 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 // 1 hour
     });
 
+    // Determine redirect URL based on user type
+    const redirectUrl = isStaffMember ? '/admin' : '/account';
+    console.log('2FA verified, redirecting user to:', redirectUrl, { 
+      isStaffMember 
+    });
+
     return NextResponse.json({
       success: true,
+      redirect: redirectUrl,
+      isStaffMember,
       message: 'Two-factor authentication verified successfully'
     });
   } catch (error) {

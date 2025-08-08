@@ -6,13 +6,13 @@ import { Input } from 'components/ui/input';
 import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface LoginPageProps {
   searchParams: Promise<{ error?: string }>;
 }
 
-function LoginForm() {
+function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -20,12 +20,59 @@ function LoginForm() {
   const [error, setError] = useState('');
   const router = useRouter();
 
+  // Handle URL error parameters
+  useEffect(() => {
+    const handleUrlErrors = async () => {
+      if (searchParams) {
+        const params = await searchParams;
+        if (params.error) {
+          let errorMessage = '';
+          switch (params.error) {
+            case 'session_expired':
+              errorMessage = 'Your session has expired. Please sign in again.';
+              break;
+            case 'authentication_failed':
+              errorMessage = 'Authentication failed. Please check your credentials and try again.';
+              break;
+            case 'shopify_staff_access_denied':
+              errorMessage = 'Access denied. You do not have permission to access the admin area.';
+              break;
+            default:
+              errorMessage = 'An error occurred. Please try again.';
+          }
+          setError(errorMessage);
+        }
+      }
+    };
+
+    handleUrlErrors();
+  }, [searchParams]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
+      // First, try admin login
+      console.log('Attempting admin login...');
+      const adminResponse = await fetch('/api/auth/admin-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (adminResponse.ok) {
+        const adminData = await adminResponse.json();
+        console.log('Admin login successful, redirecting to:', adminData.redirect);
+        router.push(adminData.redirect);
+        return;
+      }
+
+      // If admin login fails, try customer login
+      console.log('Admin login failed, trying customer login...');
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -41,8 +88,12 @@ function LoginForm() {
           // 2FA is required, redirect to verification page
           router.push(`/verify-2fa?userId=${data.userId}`);
         } else {
-          // No 2FA required, redirect to account dashboard
-          router.push('/account');
+          // No 2FA required, redirect based on user type
+          const redirectUrl = data.redirect || '/account';
+          console.log('Login successful, redirecting to:', redirectUrl, { 
+            isStaffMember: data.isStaffMember 
+          });
+          router.push(redirectUrl);
         }
       } else {
         setError(data.error || 'Login failed');
@@ -168,10 +219,10 @@ function LoginForm() {
   );
 }
 
-export default function LoginPage() {
+export default function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <div className="min-h-screen bg-muted/50 flex items-center justify-center px-4">
-      <LoginForm />
+      <LoginForm searchParams={searchParams} />
     </div>
   );
 } 

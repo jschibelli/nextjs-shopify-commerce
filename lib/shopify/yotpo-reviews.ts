@@ -8,6 +8,7 @@ const YOTPO_SECRET_KEY = process.env.YOTPO_SECRET_KEY;
 // Using a global variable to ensure persistence across API calls
 declare global {
   var reviewStorage: Map<string, YotpoReview[]>;
+  var reviewModerationLog: Array<ModerationAction>;
 }
 
 // Initialize global storage if it doesn't exist
@@ -15,11 +16,60 @@ if (!global.reviewStorage) {
   global.reviewStorage = new Map<string, YotpoReview[]>();
 }
 
+if (!global.reviewModerationLog) {
+  global.reviewModerationLog = [];
+}
+
 // File-based storage as backup
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 const STORAGE_FILE = join(process.cwd(), '.reviews-storage.json');
+const MODERATION_LOG_FILE = join(process.cwd(), '.reviews-moderation-log.json');
+
+// Enhanced review interface with better status tracking
+export interface YotpoReview {
+  id: number;
+  product_id: string;
+  reviewer_name: string;
+  reviewer_email: string;
+  rating: number;
+  title?: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  status: 'pending' | 'approved' | 'rejected' | 'deleted';
+  moderation_notes?: string;
+  moderated_by?: string;
+  moderated_at?: string;
+}
+
+// Moderation action tracking
+export interface ModerationAction {
+  id: string;
+  reviewId: number;
+  productId: string;
+  action: 'approve' | 'reject' | 'delete' | 'edit';
+  moderator: string;
+  timestamp: string;
+  notes?: string;
+  previousStatus?: string;
+  newStatus?: string;
+}
+
+export interface YotpoReviewStats {
+  averageRating: number;
+  totalReviews: number;
+  ratingDistribution: {
+    [key: number]: number;
+  };
+  moderationStats: {
+    pending: number;
+    approved: number;
+    rejected: number;
+    deleted: number;
+  };
+}
 
 // Load stored reviews from file
 function loadStoredReviewsFromFile(): Map<string, YotpoReview[]> {
@@ -35,6 +85,19 @@ function loadStoredReviewsFromFile(): Map<string, YotpoReview[]> {
   return new Map();
 }
 
+// Load moderation log from file
+function loadModerationLogFromFile(): Array<ModerationAction> {
+  try {
+    if (existsSync(MODERATION_LOG_FILE)) {
+      const data = readFileSync(MODERATION_LOG_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.log('Yotpo Debug - Error loading moderation log from file:', error);
+  }
+  return [];
+}
+
 // Save stored reviews to file
 function saveStoredReviewsToFile(): void {
   try {
@@ -46,6 +109,16 @@ function saveStoredReviewsToFile(): void {
   }
 }
 
+// Save moderation log to file
+function saveModerationLogToFile(): void {
+  try {
+    writeFileSync(MODERATION_LOG_FILE, JSON.stringify(global.reviewModerationLog, null, 2));
+    console.log('Yotpo Debug - Saved moderation log to file');
+  } catch (error) {
+    console.log('Yotpo Debug - Error saving moderation log to file:', error);
+  }
+}
+
 // Initialize storage from file
 if (global.reviewStorage.size === 0) {
   const fileStorage = loadStoredReviewsFromFile();
@@ -53,32 +126,17 @@ if (global.reviewStorage.size === 0) {
   console.log('Yotpo Debug - Loaded reviews from file:', global.reviewStorage.size, 'products');
 }
 
+if (global.reviewModerationLog.length === 0) {
+  const fileLog = loadModerationLogFromFile();
+  global.reviewModerationLog = fileLog;
+  console.log('Yotpo Debug - Loaded moderation log from file:', global.reviewModerationLog.length, 'actions');
+}
+
 // Debug environment variables (only in development)
 if (process.env.NODE_ENV === 'development') {
   console.log('Yotpo Debug - APP_KEY:', YOTPO_APP_KEY ? 'SET' : 'NOT SET');
   console.log('Yotpo Debug - SECRET_KEY:', YOTPO_SECRET_KEY ? 'SET' : 'NOT SET');
   console.log('Yotpo Debug - STORE_DOMAIN:', process.env.SHOPIFY_STORE_DOMAIN);
-}
-
-export interface YotpoReview {
-  id: number;
-  product_id: string;
-  reviewer_name: string;
-  reviewer_email: string;
-  rating: number;
-  title?: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  status: 'approved' | 'pending' | 'rejected';
-}
-
-export interface YotpoReviewStats {
-  averageRating: number;
-  totalReviews: number;
-  ratingDistribution: {
-    [key: number]: number;
-  };
 }
 
 export async function getProductReviewsYotpo(productId: string): Promise<YotpoReview[]> {
@@ -136,11 +194,19 @@ export async function getProductReviewsYotpo(productId: string): Promise<YotpoRe
   }
 }
 
-// Get stored reviews for a product
+// Get stored reviews for a product (excluding deleted reviews)
 function getStoredReviews(productId: string): YotpoReview[] {
   const reviews = global.reviewStorage.get(productId) || [];
-  console.log('Yotpo Debug - Retrieved stored reviews for product:', productId, 'Count:', reviews.length);
-  console.log('Yotpo Debug - All stored reviews:', Array.from(global.reviewStorage.entries()));
+  // Filter out deleted reviews for public display
+  const activeReviews = reviews.filter(review => review.status !== 'deleted');
+  console.log('Yotpo Debug - Retrieved stored reviews for product:', productId, 'Count:', activeReviews.length);
+  return activeReviews;
+}
+
+// Get all stored reviews for a product (including deleted for moderation)
+function getAllStoredReviews(productId: string): YotpoReview[] {
+  const reviews = global.reviewStorage.get(productId) || [];
+  console.log('Yotpo Debug - Retrieved all stored reviews for product:', productId, 'Count:', reviews.length);
   return reviews;
 }
 
@@ -153,39 +219,116 @@ function storeReview(productId: string, review: YotpoReview): void {
     id: review.id,
     title: review.title,
     author: review.reviewer_name,
-    rating: review.rating
+    rating: review.rating,
+    status: review.status
   });
   console.log('Yotpo Debug - Total stored reviews for product:', global.reviewStorage.get(productId)?.length || 0);
-  console.log('Yotpo Debug - All stored reviews after storing:', Array.from(global.reviewStorage.entries()));
   
   // Save to file
   saveStoredReviewsToFile();
 }
 
-// Moderation functions
-export function approveReview(productId: string, reviewId: number): boolean {
+// Enhanced moderation functions with logging
+export function approveReview(productId: string, reviewId: number, moderator: string = 'admin', notes?: string): boolean {
   const reviews = global.reviewStorage.get(productId) || [];
   const reviewIndex = reviews.findIndex(r => r.id === reviewId);
   
   if (reviewIndex !== -1 && reviews[reviewIndex]) {
+    const previousStatus = reviews[reviewIndex].status;
     reviews[reviewIndex].status = 'approved';
+    reviews[reviewIndex].moderated_by = moderator;
+    reviews[reviewIndex].moderated_at = new Date().toISOString();
+    if (notes) {
+      reviews[reviewIndex].moderation_notes = notes;
+    }
+    
     global.reviewStorage.set(productId, reviews);
     saveStoredReviewsToFile();
+    
+    // Log the moderation action
+    logModerationAction({
+      id: `${Date.now()}-${Math.random()}`,
+      reviewId,
+      productId,
+      action: 'approve',
+      moderator,
+      timestamp: new Date().toISOString(),
+      notes,
+      previousStatus,
+      newStatus: 'approved'
+    });
+    
     console.log('Yotpo Debug - Approved review:', reviewId);
     return true;
   }
   return false;
 }
 
-export function rejectReview(productId: string, reviewId: number): boolean {
+export function rejectReview(productId: string, reviewId: number, moderator: string = 'admin', notes?: string): boolean {
   const reviews = global.reviewStorage.get(productId) || [];
   const reviewIndex = reviews.findIndex(r => r.id === reviewId);
   
   if (reviewIndex !== -1 && reviews[reviewIndex]) {
+    const previousStatus = reviews[reviewIndex].status;
     reviews[reviewIndex].status = 'rejected';
+    reviews[reviewIndex].moderated_by = moderator;
+    reviews[reviewIndex].moderated_at = new Date().toISOString();
+    if (notes) {
+      reviews[reviewIndex].moderation_notes = notes;
+    }
+    
     global.reviewStorage.set(productId, reviews);
     saveStoredReviewsToFile();
+    
+    // Log the moderation action
+    logModerationAction({
+      id: `${Date.now()}-${Math.random()}`,
+      reviewId,
+      productId,
+      action: 'reject',
+      moderator,
+      timestamp: new Date().toISOString(),
+      notes,
+      previousStatus,
+      newStatus: 'rejected'
+    });
+    
     console.log('Yotpo Debug - Rejected review:', reviewId);
+    return true;
+  }
+  return false;
+}
+
+export function deleteReview(productId: string, reviewId: number, moderator: string = 'admin', notes?: string): boolean {
+  const reviews = global.reviewStorage.get(productId) || [];
+  const reviewIndex = reviews.findIndex(r => r.id === reviewId);
+  
+  if (reviewIndex !== -1 && reviews[reviewIndex]) {
+    const previousStatus = reviews[reviewIndex].status;
+    reviews[reviewIndex].status = 'deleted';
+    reviews[reviewIndex].moderated_by = moderator;
+    reviews[reviewIndex].moderated_at = new Date().toISOString();
+    if (notes) {
+      reviews[reviewIndex].moderation_notes = notes;
+    }
+    
+    global.reviewStorage.set(productId, reviews);
+    saveStoredReviewsToFile();
+    
+    // Log the moderation action
+    logModerationAction({
+      id: `${Date.now()}-${Math.random()}`,
+      reviewId,
+      productId,
+      action: 'delete',
+      moderator,
+      timestamp: new Date().toISOString(),
+      notes,
+      previousStatus,
+      newStatus: 'deleted'
+    });
+    
+    console.log('Yotpo Debug - Deleted review:', reviewId);
     return true;
   }
   return false;
@@ -195,7 +338,7 @@ export function editReview(productId: string, reviewId: number, updates: {
   title?: string;
   content?: string;
   rating?: number;
-}): boolean {
+}, moderator: string = 'admin', notes?: string): boolean {
   const reviews = global.reviewStorage.get(productId) || [];
   const reviewIndex = reviews.findIndex(r => r.id === reviewId);
   
@@ -204,30 +347,50 @@ export function editReview(productId: string, reviewId: number, updates: {
     reviews[reviewIndex] = {
       ...review,
       ...updates,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      moderated_by: moderator,
+      moderated_at: new Date().toISOString()
     } as YotpoReview;
+    
+    if (notes) {
+      reviews[reviewIndex].moderation_notes = notes;
+    }
+    
     global.reviewStorage.set(productId, reviews);
     saveStoredReviewsToFile();
+    
+    // Log the moderation action
+    logModerationAction({
+      id: `${Date.now()}-${Math.random()}`,
+      reviewId,
+      productId,
+      action: 'edit',
+      moderator,
+      timestamp: new Date().toISOString(),
+      notes,
+      previousStatus: review?.status,
+      newStatus: review?.status
+    });
+    
     console.log('Yotpo Debug - Edited review:', reviewId, updates);
     return true;
   }
   return false;
 }
 
-export function deleteReview(productId: string, reviewId: number): boolean {
-  const reviews = global.reviewStorage.get(productId) || [];
-  const filteredReviews = reviews.filter(r => r.id !== reviewId);
-  
-  if (filteredReviews.length !== reviews.length) {
-    global.reviewStorage.set(productId, filteredReviews);
-    saveStoredReviewsToFile();
-    console.log('Yotpo Debug - Deleted review:', reviewId);
-    return true;
-  }
-  return false;
+// Log moderation actions
+function logModerationAction(action: ModerationAction): void {
+  global.reviewModerationLog.push(action);
+  saveModerationLogToFile();
+  console.log('Yotpo Debug - Logged moderation action:', action);
 }
 
-// Get all reviews for moderation (including pending and rejected)
+// Get moderation log
+export function getModerationLog(): ModerationAction[] {
+  return global.reviewModerationLog;
+}
+
+// Get all reviews for moderation (excluding deleted reviews from main view)
 export function getAllReviewsForModeration(): Array<{
   productId: string;
   reviews: YotpoReview[];
@@ -235,7 +398,11 @@ export function getAllReviewsForModeration(): Array<{
   const allReviews: Array<{ productId: string; reviews: YotpoReview[] }> = [];
   
   for (const [productId, reviews] of global.reviewStorage.entries()) {
-    allReviews.push({ productId, reviews });
+    // Filter out deleted reviews from moderation view
+    const activeReviews = reviews.filter(r => r.status !== 'deleted');
+    if (activeReviews.length > 0) {
+      allReviews.push({ productId, reviews: activeReviews });
+    }
   }
   
   return allReviews;
@@ -258,10 +425,129 @@ export function getPendingReviews(): Array<{
   return pendingReviews;
 }
 
+// Get reviews by status for moderation
+export function getReviewsByStatus(status: 'pending' | 'approved' | 'rejected' | 'deleted'): Array<{
+  productId: string;
+  reviews: YotpoReview[];
+}> {
+  const filteredReviews: Array<{ productId: string; reviews: YotpoReview[] }> = [];
+  
+  for (const [productId, reviews] of global.reviewStorage.entries()) {
+    const filtered = reviews.filter(r => r.status === status);
+    if (filtered.length > 0) {
+      filteredReviews.push({ productId, reviews: filtered });
+    }
+  }
+  
+  return filteredReviews;
+}
+
+// Get moderation statistics
+export function getModerationStats(): {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  deleted: number;
+} {
+  let total = 0;
+  let pending = 0;
+  let approved = 0;
+  let rejected = 0;
+  let deleted = 0;
+  
+  for (const reviews of global.reviewStorage.values()) {
+    total += reviews.length;
+    reviews.forEach(review => {
+      switch (review.status) {
+        case 'pending':
+          pending++;
+          break;
+        case 'approved':
+          approved++;
+          break;
+        case 'rejected':
+          rejected++;
+          break;
+        case 'deleted':
+          deleted++;
+          break;
+      }
+    });
+  }
+  
+  return { total, pending, approved, rejected, deleted };
+}
+
+// Bulk moderation actions
+export function bulkApproveReviews(reviewIds: Array<{ productId: string; reviewId: number }>, moderator: string = 'admin'): {
+  success: number;
+  failed: number;
+  errors: string[];
+} {
+  let success = 0;
+  let failed = 0;
+  const errors: string[] = [];
+  
+  reviewIds.forEach(({ productId, reviewId }) => {
+    if (approveReview(productId, reviewId, moderator)) {
+      success++;
+    } else {
+      failed++;
+      errors.push(`Failed to approve review ${reviewId} for product ${productId}`);
+    }
+  });
+  
+  return { success, failed, errors };
+}
+
+export function bulkRejectReviews(reviewIds: Array<{ productId: string; reviewId: number }>, moderator: string = 'admin'): {
+  success: number;
+  failed: number;
+  errors: string[];
+} {
+  let success = 0;
+  let failed = 0;
+  const errors: string[] = [];
+  
+  reviewIds.forEach(({ productId, reviewId }) => {
+    if (rejectReview(productId, reviewId, moderator)) {
+      success++;
+    } else {
+      failed++;
+      errors.push(`Failed to reject review ${reviewId} for product ${productId}`);
+    }
+  });
+  
+  return { success, failed, errors };
+}
+
+export function bulkDeleteReviews(reviewIds: Array<{ productId: string; reviewId: number }>, moderator: string = 'admin'): {
+  success: number;
+  failed: number;
+  errors: string[];
+} {
+  let success = 0;
+  let failed = 0;
+  const errors: string[] = [];
+  
+  reviewIds.forEach(({ productId, reviewId }) => {
+    if (deleteReview(productId, reviewId, moderator)) {
+      success++;
+    } else {
+      failed++;
+      errors.push(`Failed to delete review ${reviewId} for product ${productId}`);
+    }
+  });
+  
+  return { success, failed, errors };
+}
+
 // Debug function to test storage
 export function debugStorage(): void {
   console.log('Yotpo Debug - Storage test - All stored reviews:', Array.from(global.reviewStorage.entries()));
   console.log('Yotpo Debug - Storage test - Storage size:', global.reviewStorage.size);
+  console.log('Yotpo Debug - Moderation log size:', global.reviewModerationLog.length);
 }
 
 // Test Yotpo API connectivity
@@ -423,7 +709,7 @@ export async function createProductReviewYotpo(reviewData: {
         content: reviewData.content,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        status: 'approved' // API reviews are typically approved
+        status: 'pending' // New reviews start as pending for moderation
       };
       
       // Store the review locally as well
@@ -462,7 +748,7 @@ export async function createProductReviewYotpo(reviewData: {
           content: reviewData.content,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          status: 'approved'
+          status: 'pending'
         };
         
         storeReview(reviewData.productId, apiReview);
@@ -510,7 +796,7 @@ function createMockReview(reviewData: {
     content: reviewData.content,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    status: 'approved'
+    status: 'pending' // New reviews start as pending for moderation
   };
   
   return mockReview;
@@ -532,9 +818,56 @@ export async function getProductReviewStatsYotpo(productId: string): Promise<Yot
     }
   });
 
+  // Get moderation stats for this product
+  const productReviews = getAllStoredReviews(productId);
+  const moderationStats = {
+    pending: productReviews.filter(r => r.status === 'pending').length,
+    approved: productReviews.filter(r => r.status === 'approved').length,
+    rejected: productReviews.filter(r => r.status === 'rejected').length,
+    deleted: productReviews.filter(r => r.status === 'deleted').length,
+  };
+
   return {
     averageRating,
     totalReviews,
-    ratingDistribution
+    ratingDistribution,
+    moderationStats
+  };
+}
+
+// Get stats for only approved reviews (for public display)
+export async function getProductReviewStatsPublic(productId: string): Promise<YotpoReviewStats> {
+  const allReviews = await getProductReviewsYotpo(productId);
+  
+  // Filter to only approved reviews for public display
+  const approvedReviews = allReviews.filter(review => review.status === 'approved');
+  
+  const totalReviews = approvedReviews.length;
+  const averageRating = totalReviews > 0 
+    ? approvedReviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews 
+    : 0;
+  
+  const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  approvedReviews.forEach(review => {
+    const rating = Math.round(review.rating);
+    if (rating >= 1 && rating <= 5) {
+      ratingDistribution[rating as keyof typeof ratingDistribution]++;
+    }
+  });
+
+  // Get moderation stats for this product (for admin reference)
+  const productReviews = getAllStoredReviews(productId);
+  const moderationStats = {
+    pending: productReviews.filter(r => r.status === 'pending').length,
+    approved: productReviews.filter(r => r.status === 'approved').length,
+    rejected: productReviews.filter(r => r.status === 'rejected').length,
+    deleted: productReviews.filter(r => r.status === 'deleted').length,
+  };
+
+  return {
+    averageRating,
+    totalReviews,
+    ratingDistribution,
+    moderationStats
   };
 } 
