@@ -311,11 +311,26 @@ export default function AdminNavigation() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/api/admin/logout" className="flex items-center text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </Link>
+                <DropdownMenuItem 
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/admin/logout', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                      });
+                      if (response.ok) {
+                        window.location.href = '/';
+                      }
+                    } catch (error) {
+                      console.error('Logout error:', error);
+                    }
+                  }}
+                  className="flex items-center text-red-600 cursor-pointer"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -423,14 +438,28 @@ export default function AdminNavigation() {
                   <Settings className="h-4 w-4" />
                   <span>Settings</span>
                 </Link>
-                <Link
-                  href="/api/admin/logout"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                <button
+                  onClick={async () => {
+                    setMobileMenuOpen(false);
+                    try {
+                      const response = await fetch('/api/admin/logout', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                      });
+                      if (response.ok) {
+                        window.location.href = '/';
+                      }
+                    } catch (error) {
+                      console.error('Logout error:', error);
+                    }
+                  }}
+                  className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors w-full text-left"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>
-                </Link>
+                </button>
               </div>
             </div>
           </div>

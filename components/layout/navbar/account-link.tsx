@@ -114,11 +114,26 @@ export default function AccountLink() {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/api/admin/logout" className="flex items-center text-red-600">
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </Link>
+          <DropdownMenuItem 
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/admin/logout', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                });
+                if (response.ok) {
+                  window.location.href = '/';
+                }
+              } catch (error) {
+                console.error('Logout error:', error);
+              }
+            }}
+            className="flex items-center text-red-600 cursor-pointer"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -178,11 +193,26 @@ export default function AccountLink() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/api/auth/logout" className="flex items-center text-red-600">
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Link>
+        <DropdownMenuItem 
+          onClick={async () => {
+            try {
+              const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              });
+              if (response.ok) {
+                window.location.href = '/';
+              }
+            } catch (error) {
+              console.error('Logout error:', error);
+            }
+          }}
+          className="flex items-center text-red-600 cursor-pointer"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
