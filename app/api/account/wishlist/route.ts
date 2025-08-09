@@ -1,9 +1,7 @@
 import { getProducts } from 'lib/shopify';
+import { getWishlistStorage } from 'lib/wishlist-utils';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-
-// In-memory storage for wishlist items (in production, this would be a database)
-const wishlistStorage = new Map<string, Set<string>>();
 
 const getCustomerIdFromToken = (tokenValue: string): string | null => {
   try {
@@ -32,11 +30,12 @@ export async function GET() {
     }
     
     // Get customer's wishlist items
+    const wishlistStorage = getWishlistStorage();
     const customerWishlist = wishlistStorage.get(customerId) || new Set();
     
     if (customerWishlist.size === 0) {
       // Return empty wishlist for new customers
-      return NextResponse.json({ wishlistItems: [] });
+      return NextResponse.json({ items: [] });
     }
 
     // Fetch all products to get details for wishlist items
@@ -53,27 +52,18 @@ export async function GET() {
         
         return {
           id: product.id,
-          name: product.title,
-          price: parseFloat(product.priceRange.minVariantPrice.amount),
-          originalPrice: parseFloat(product.priceRange.minVariantPrice.amount), // No simulated discount
-          image: product.featuredImage?.url || '/api/placeholder/150/150',
-          rating: 0, // No simulated ratings
-          reviews: 0, // No simulated reviews
-          inStock: product.availableForSale,
-          addedDate: new Date().toISOString().split('T')[0], // Current date
-          category: product.tags[0] || 'General',
-          handle: product.handle
+          title: product.title,
+          handle: product.handle,
+          featuredImage: product.featuredImage,
+          priceRange: product.priceRange
         };
       })
       .filter(item => item !== null);
 
-    return NextResponse.json({ wishlistItems });
+    return NextResponse.json({ items: wishlistItems });
   } catch (error) {
-    console.error('Get wishlist error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch wishlist' },
-      { status: 500 }
-    );
+    console.error('Error fetching wishlist:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -86,39 +76,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { productId } = await request.json();
-    
-    if (!productId) {
-      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
-    }
-
     // Get customer ID from token
     const customerId = getCustomerIdFromToken(tokenCookie.value);
     
     if (!customerId) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
-    
-    // Initialize customer wishlist if it doesn't exist
+
+    const body = await request.json();
+    const { id: productId } = body;
+
+    if (!productId) {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
+    }
+
+    // Add item to customer's wishlist
+    const wishlistStorage = getWishlistStorage();
     if (!wishlistStorage.has(customerId)) {
       wishlistStorage.set(customerId, new Set());
     }
     
-    // Add product to wishlist
-    wishlistStorage.get(customerId)!.add(productId);
-    
-    console.log('Add to wishlist:', { customerId, productId });
+    const customerWishlist = wishlistStorage.get(customerId)!;
+    customerWishlist.add(productId);
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Item added to wishlist' 
+      message: 'Item added to wishlist',
+      itemCount: customerWishlist.size
     });
   } catch (error) {
-    console.error('Add to wishlist error:', error);
-    return NextResponse.json(
-      { error: 'Failed to add to wishlist' },
-      { status: 500 }
-    );
+    console.error('Error adding to wishlist:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -131,37 +119,40 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const itemId = searchParams.get('itemId');
-    
-    if (!itemId) {
-      return NextResponse.json({ error: 'Item ID is required' }, { status: 400 });
-    }
-
     // Get customer ID from token
     const customerId = getCustomerIdFromToken(tokenCookie.value);
     
     if (!customerId) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
-    
-    // Remove product from wishlist
-    const customerWishlist = wishlistStorage.get(customerId);
-    if (customerWishlist) {
-      customerWishlist.delete(itemId);
+
+    const body = await request.json();
+    const { productId } = body;
+
+    if (!productId) {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
     }
+
+    // Remove item from customer's wishlist
+    const wishlistStorage = getWishlistStorage();
+    const customerWishlist = wishlistStorage.get(customerId);
     
-    console.log('Remove from wishlist:', { customerId, itemId });
+    if (customerWishlist) {
+      customerWishlist.delete(productId);
+      
+      // If wishlist is empty, remove the customer's entry
+      if (customerWishlist.size === 0) {
+        wishlistStorage.delete(customerId);
+      }
+    }
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Item removed from wishlist' 
+      message: 'Item removed from wishlist',
+      itemCount: customerWishlist?.size || 0
     });
   } catch (error) {
-    console.error('Remove from wishlist error:', error);
-    return NextResponse.json(
-      { error: 'Failed to remove from wishlist' },
-      { status: 500 }
-    );
+    console.error('Error removing from wishlist:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

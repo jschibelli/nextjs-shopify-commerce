@@ -1,5 +1,5 @@
+import { clearAllWishlistData, clearWishlistForCustomer } from 'lib/wishlist-utils';
 import { NextRequest, NextResponse } from 'next/server';
-import { clearAllWishlistData, clearWishlistForCustomer } from '../account/wishlist/route';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,4 +34,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

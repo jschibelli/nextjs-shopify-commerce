@@ -32,8 +32,15 @@ export function AddToWishlist({ product }: AddToWishlistProps) {
         setMessage('Removed from wishlist!');
         setTimeout(() => setMessage(''), 3000);
       } else {
-        // Add to wishlist
-        await addToWishlist(product.id);
+        // Add to wishlist - convert product to wishlist item format
+        const wishlistItem = {
+          id: product.id,
+          title: product.title,
+          handle: product.handle,
+          featuredImage: product.featuredImage,
+          priceRange: product.priceRange
+        };
+        await addToWishlist(wishlistItem);
         setMessage('Added to wishlist!');
         setTimeout(() => setMessage(''), 3000);
       }

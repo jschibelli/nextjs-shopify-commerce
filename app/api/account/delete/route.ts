@@ -1,8 +1,8 @@
 import { getAuth } from 'lib/auth';
 import { deleteCustomerAccessToken, deleteCustomerWithAdminAPI, getCustomerWithAdminAPI } from 'lib/shopify';
+import { clearWishlistForCustomer } from 'lib/wishlist-utils';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { clearWishlistForCustomer } from '../wishlist/route';
 
 export async function POST(request: NextRequest) {
   try {

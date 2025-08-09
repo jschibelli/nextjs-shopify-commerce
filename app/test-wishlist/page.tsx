@@ -49,7 +49,22 @@ export default function TestWishlistPage() {
 
   const testAddToWishlist = async () => {
     try {
-      await addToWishlist('gid://shopify/Product/123456789');
+      const testItem = {
+        id: 'gid://shopify/Product/123456789',
+        title: 'Test Product',
+        handle: 'test-product',
+        featuredImage: {
+          url: '/api/placeholder/150/150',
+          altText: 'Test Product Image'
+        },
+        priceRange: {
+          maxVariantPrice: {
+            amount: '29.99',
+            currencyCode: 'USD'
+          }
+        }
+      };
+      await addToWishlist(testItem);
       setTestResult('Added test product to wishlist');
     } catch (error) {
       setTestResult(`Error adding to wishlist: ${error}`);
@@ -105,7 +120,7 @@ export default function TestWishlistPage() {
             <ul className="list-disc list-inside">
               {wishlistItems.map((item, index) => (
                 <li key={index}>
-                  {item.name} - ${item.price} (ID: {item.id})
+                  {item.title} - {item.priceRange.maxVariantPrice.currencyCode} {item.priceRange.maxVariantPrice.amount} (ID: {item.id})
                 </li>
               ))}
             </ul>

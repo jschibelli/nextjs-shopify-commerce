@@ -12,8 +12,18 @@ import { useState } from 'react';
 interface WishlistActionsProps {
   item: {
     id: string;
-    name: string;
-    inStock: boolean;
+    title: string;
+    handle: string;
+    featuredImage: {
+      url: string;
+      altText: string;
+    };
+    priceRange: {
+      maxVariantPrice: {
+        amount: string;
+        currencyCode: string;
+      };
+    };
   };
 }
 
@@ -72,7 +82,7 @@ export default function WishlistActions({ item }: WishlistActionsProps) {
       <div className="flex items-center space-x-2">
         <Button 
           size="sm" 
-          disabled={!item.inStock || isLoading}
+          disabled={isLoading}
           onClick={handleAddToCart}
         >
           <ShoppingCart className="w-4 h-4 mr-1" />

@@ -346,8 +346,8 @@ export default function CustomerNavigation() {
       )}
 
       {/* Modals */}
-      <EnhancedCartModal />
-      <WishlistModal />
+      <EnhancedCartModal isOpen={isCartOpen} onClose={closeCart} />
+      <WishlistModal isOpen={isWishlistOpen} onClose={closeWishlist} />
     </header>
   );
 } 

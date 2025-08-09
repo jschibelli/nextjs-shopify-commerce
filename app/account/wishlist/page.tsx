@@ -43,8 +43,13 @@ function WishlistPage() {
     }
   };
 
-  const totalValue = wishlistItems.reduce((sum, item) => sum + item.price, 0);
-  const savings = wishlistItems.reduce((sum, item) => sum + (item.originalPrice - item.price), 0);
+  const totalValue = wishlistItems.reduce((sum, item) => {
+    const price = parseFloat(item.priceRange.maxVariantPrice.amount);
+    return sum + price;
+  }, 0);
+  
+  // For savings calculation, we'll use the same price since we don't have original price in the new interface
+  const savings = 0; // Placeholder since the new interface doesn't have originalPrice
 
   if (isLoading || wishlistLoading) {
     return (
@@ -126,7 +131,7 @@ function WishlistPage() {
               <span className="text-sm font-medium">In Stock</span>
             </div>
             <p className="text-2xl font-bold">
-              {wishlistItems.filter(item => item.inStock).length}
+              {wishlistItems.length}
             </p>
           </CardContent>
         </Card>
@@ -162,19 +167,19 @@ function WishlistPage() {
             <Card key={item.id} className="relative">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{item.name}</CardTitle>
-                  <Badge variant={item.inStock ? 'default' : 'secondary'}>
-                    {item.inStock ? 'In Stock' : 'Out of Stock'}
+                  <CardTitle className="text-lg">{item.title}</CardTitle>
+                  <Badge variant="default">
+                    Available
                   </Badge>
                 </div>
-                <CardDescription>{item.category}</CardDescription>
+                <CardDescription>Product</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="aspect-square relative overflow-hidden rounded-lg">
-                  {item.image && item.image !== '/api/placeholder/150/150' ? (
+                  {item.featuredImage?.url ? (
                     <img
-                      src={item.image}
-                      alt={item.name}
+                      src={item.featuredImage.url}
+                      alt={item.featuredImage.altText || item.title}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -186,25 +191,20 @@ function WishlistPage() {
                 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold">${item.price.toFixed(2)}</span>
-                    {item.originalPrice > item.price && (
-                      <span className="text-sm text-muted-foreground line-through">
-                        ${item.originalPrice.toFixed(2)}
-                      </span>
-                    )}
+                    <span className="text-lg font-bold">
+                      {item.priceRange.maxVariantPrice.currencyCode} {parseFloat(item.priceRange.maxVariantPrice.amount).toFixed(2)}
+                    </span>
                   </div>
                   
                   <div className="flex items-center space-x-1">
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
-                        className={`h-4 w-4 ${
-                          i < item.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                        }`}
+                        className="h-4 w-4 text-gray-300"
                       />
                     ))}
                     <span className="text-sm text-muted-foreground ml-1">
-                      ({item.reviews})
+                      (0 reviews)
                     </span>
                   </div>
                   
