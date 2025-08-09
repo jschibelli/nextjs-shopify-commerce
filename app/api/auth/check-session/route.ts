@@ -6,13 +6,48 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
+
+    // Demo short-circuit
+    const isDemoCookie = (process.env.DEMO_MODE === 'true') && cookieStore.get('demo')?.value === 'true';
+    const demoRole = cookieStore.get('demo_role')?.value;
+    if (isDemoCookie) {
+      if (demoRole === 'admin') {
+        return NextResponse.json({
+          isAuthenticated: true,
+          user: {
+            id: 'demo_admin',
+            email: process.env.DEMO_ADMIN_EMAIL || 'demo+admin@example.com',
+            firstName: 'Demo',
+            lastName: 'Admin',
+            role: 'admin'
+          },
+          isStaffMember: true,
+          isDemo: true,
+          demoRole: 'admin'
+        });
+      }
+      return NextResponse.json({
+        isAuthenticated: true,
+        user: {
+          id: process.env.DEMO_CUSTOMER_ID || 'demo_customer',
+          email: process.env.DEMO_CUSTOMER_EMAIL || 'demo+customer@example.com',
+          firstName: 'Demo',
+          lastName: 'Customer'
+        },
+        isStaffMember: false,
+        isDemo: true,
+        demoRole: 'customer'
+      });
+    }
+
     const tokenCookie = cookieStore.get('customer_token');
     
     if (!tokenCookie) {
       return NextResponse.json({ 
         isAuthenticated: false,
         user: null,
-        isStaffMember: false
+        isStaffMember: false,
+        isDemo: false
       });
     }
 
@@ -33,7 +68,8 @@ export async function GET(request: NextRequest) {
             lastName: adminUser.lastName,
             role: adminUser.role
           },
-          isStaffMember: true
+          isStaffMember: true,
+          isDemo: false
         });
       }
       
@@ -50,7 +86,8 @@ export async function GET(request: NextRequest) {
               lastName: staffMember.last_name,
               role: sessionData.role || staffMember.role
             },
-            isStaffMember: true
+            isStaffMember: true,
+            isDemo: false
           });
         }
       }
@@ -67,7 +104,8 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ 
             isAuthenticated: false,
             user: null,
-            isStaffMember: false
+            isStaffMember: false,
+            isDemo: false
           });
         }
 
@@ -79,27 +117,31 @@ export async function GET(request: NextRequest) {
             firstName: user.firstName,
             lastName: user.lastName
           },
-          isStaffMember: false
+          isStaffMember: false,
+          isDemo: false
         });
       } else {
         return NextResponse.json({ 
           isAuthenticated: false,
           user: null,
-          isStaffMember: false
+          isStaffMember: false,
+          isDemo: false
         });
       }
     } catch (error) {
       return NextResponse.json({ 
         isAuthenticated: false,
         user: null,
-        isStaffMember: false
+        isStaffMember: false,
+        isDemo: false
       });
     }
   } catch (error) {
     return NextResponse.json({ 
       isAuthenticated: false,
       user: null,
-      isStaffMember: false
+      isStaffMember: false,
+      isDemo: false
     });
   }
 } 

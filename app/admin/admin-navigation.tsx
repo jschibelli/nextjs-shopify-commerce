@@ -329,8 +329,8 @@ export default function AdminNavigation() {
                   }}
                   className="flex items-center text-red-600 cursor-pointer"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

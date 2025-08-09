@@ -193,7 +193,7 @@ function WishlistPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-bold">
                       {item.priceRange.maxVariantPrice.currencyCode} {parseFloat(item.priceRange.maxVariantPrice.amount).toFixed(2)}
-                    </span>
+                      </span>
                   </div>
                   
                   <div className="flex items-center space-x-1">

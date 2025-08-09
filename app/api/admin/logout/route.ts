@@ -1,4 +1,5 @@
 import { getAuth } from 'lib/auth';
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
@@ -7,20 +8,25 @@ export async function POST(request: NextRequest) {
     await auth.initializeFromCookies();
     const user = await auth.getCurrentUser();
     
-    // Log the logout but don't clear wishlist data
     if (user) {
       console.log('Logging out user:', user.email);
     }
     
-    // Clear the admin session cookie
     const response = NextResponse.json({ success: true });
-    
-    // Remove the customer token cookie (used for admin auth)
     response.cookies.delete('customer_token');
-    
-    // Remove any other admin-related cookies
     response.cookies.delete('admin_session');
     response.cookies.delete('admin_token');
+
+    // Clear demo cookies if present
+    try {
+      const cookieStore = await cookies();
+      const isDemo = (process.env.DEMO_MODE === 'true') && cookieStore.get('demo')?.value === 'true';
+      const demoRole = cookieStore.get('demo_role')?.value;
+      if (isDemo && demoRole === 'admin') {
+        response.cookies.delete('demo');
+        response.cookies.delete('demo_role');
+      }
+    } catch {}
     
     return response;
   } catch (error) {

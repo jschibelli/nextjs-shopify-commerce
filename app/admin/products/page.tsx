@@ -110,6 +110,25 @@ interface ProductFormData {
   }>;
 }
 
+const DEMO_CREATED_KEY = 'demo_products_created';
+const DEMO_UPDATED_KEY = 'demo_products_updated'; // id -> partial product
+const DEMO_DELETED_KEY = 'demo_products_deleted'; // string[]
+
+function readJson<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJson(key: string, value: any) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -126,6 +145,7 @@ export default function AdminProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [originalImages, setOriginalImages] = useState<any[]>([]);
+  const [isDemo, setIsDemo] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
     title: '',
     description: '',
@@ -149,7 +169,22 @@ export default function AdminProductsPage() {
   });
 
   useEffect(() => {
-    fetchProducts();
+    // Detect demo admin session via API
+    const detect = async () => {
+      try {
+        const res = await fetch('/api/auth/check-session');
+        if (res.ok) {
+          const data = await res.json();
+          const demo = !!data.isDemo && !!data.isStaffMember; // demo admin only
+          setIsDemo(demo);
+          fetchProducts(demo);
+          return;
+        }
+      } catch {}
+      setIsDemo(false);
+      fetchProducts(false);
+    };
+    detect();
   }, []);
 
   const testAuth = async () => {
@@ -164,39 +199,50 @@ export default function AdminProductsPage() {
     }
   };
 
-  const fetchProducts = async () => {
+  const overlayWithDemoData = (base: Product[]): Product[] => {
+    if (!isDemo) return base;
+    const created = readJson<Product[]>(DEMO_CREATED_KEY, []);
+    const updated = readJson<Record<string, Partial<Product>>>(DEMO_UPDATED_KEY, {});
+    const deleted = readJson<string[]>(DEMO_DELETED_KEY, []);
+
+    // Filter deleted
+    const filtered = base.filter(p => !deleted.includes(p.id));
+    // Apply updates
+    const merged = filtered.map(p => (updated[p.id] ? { ...p, ...updated[p.id] } as Product : p));
+    // Append created
+    return [...created, ...merged];
+  };
+
+  const fetchProducts = async (demoFlag = isDemo) => {
     setIsLoading(true);
     setError(null);
     try {
-      // Try Admin API first
       let response = await fetch('/api/admin/products');
-      
       if (response.ok) {
         const data = await response.json();
-        setProducts(data.products || []);
-        if (data.products?.length === 0) {
+        const list = data.products || [];
+        const overlaid = demoFlag ? overlayWithDemoData(list) : list;
+        setProducts(overlaid);
+        if (overlaid.length === 0) {
           setSuccess('No products found. Create your first product to get started!');
         }
         return;
       }
-      
-      // If Admin API fails with 403, try read-only Storefront API
       if (response.status === 403) {
         console.log('Admin API failed, trying read-only Storefront API...');
         response = await fetch('/api/admin/products/readonly');
-        
         if (response.ok) {
           const data = await response.json();
-          setProducts(data.products || []);
+          const list = data.products || [];
+          const overlaid = demoFlag ? overlayWithDemoData(list) : list;
+          setProducts(overlaid);
           setSuccess(data.message || 'Products loaded in read-only mode. Set up Admin API permissions for full functionality.');
           return;
         }
       }
-      
-      // Handle other errors
       const errorData = await response.json();
       if (response.status === 403) {
-        setError('API permissions required. Please ensure your Shopify app has the following scopes: read_products, write_products. Check the SHOPIFY_APP_SETUP_GUIDE.md file for setup instructions.');
+        setError('API permissions required. Please ensure your Shopify app has the following scopes: read_products, write_products.');
       } else if (response.status === 401) {
         setError('Authentication failed. Please login again.');
       } else {
@@ -207,6 +253,36 @@ export default function AdminProductsPage() {
       setError('Network error. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const persistCreateDemo = (product: Product) => {
+    const created = readJson<Product[]>(DEMO_CREATED_KEY, []);
+    writeJson(DEMO_CREATED_KEY, [product, ...created]);
+  };
+
+  const persistUpdateDemo = (product: Product) => {
+    const updated = readJson<Record<string, Partial<Product>>>(DEMO_UPDATED_KEY, {});
+    updated[product.id] = { ...updated[product.id], ...product };
+    writeJson(DEMO_UPDATED_KEY, updated);
+  };
+
+  const persistDeleteDemo = (productId: string) => {
+    // Remove from created if it was a demo-created product
+    const created = readJson<Product[]>(DEMO_CREATED_KEY, []);
+    const remainingCreated = created.filter(p => p.id !== productId);
+    writeJson(DEMO_CREATED_KEY, remainingCreated);
+    // Mark as deleted (so base products are hidden)
+    const deleted = readJson<string[]>(DEMO_DELETED_KEY, []);
+    if (!deleted.includes(productId)) {
+      deleted.push(productId);
+      writeJson(DEMO_DELETED_KEY, deleted);
+    }
+    // Remove any pending updates for this id
+    const updated = readJson<Record<string, Partial<Product>>>(DEMO_UPDATED_KEY, {});
+    if (updated[productId]) {
+      delete updated[productId];
+      writeJson(DEMO_UPDATED_KEY, updated);
     }
   };
 
@@ -250,7 +326,12 @@ export default function AdminProductsPage() {
           images: []
         });
         setSuccess(`Product "${data.product.title}" created successfully!`);
-        fetchProducts();
+        if (data.demo || isDemo) {
+          persistCreateDemo(data.product as Product);
+          setProducts(prev => [data.product as Product, ...prev]);
+        } else {
+          fetchProducts();
+        }
       } else {
         const errorData = await response.json();
         if (response.status === 403) {
@@ -273,9 +354,7 @@ export default function AdminProductsPage() {
     setIsUpdating(true);
     setError(null);
     try {
-      // First, update the product data (excluding images)
       const { images, ...productUpdateData } = formData;
-      
       const response = await fetch(`/api/admin/products/${selectedProduct.id}`, {
         method: 'PUT',
         headers: {
@@ -289,56 +368,8 @@ export default function AdminProductsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        
-        // Handle image deletions - find images that were in original but not in current
-        const currentImageIds = images.filter(img => img.id).map(img => img.id);
-        const deletedImages = originalImages.filter(img => 
-          img.id && !currentImageIds.includes(img.id)
-        );
-        
-        // Delete removed images from Shopify
-        for (const deletedImage of deletedImages) {
-          try {
-            const deleteResponse = await fetch(`/api/admin/products/${selectedProduct.id}/images?imageId=${deletedImage.id}`, {
-              method: 'DELETE'
-            });
-            
-            if (deleteResponse.ok) {
-              console.log('Deleted image from Shopify:', deletedImage.id);
-            } else {
-              console.warn('Failed to delete image from Shopify:', deletedImage.id);
-            }
-          } catch (deleteError) {
-            console.warn('Error deleting image:', deleteError);
-          }
-        }
-        
-        // Only upload new images (base64 data URLs)
-        const newImages = images.filter(img => img.src.startsWith('data:'));
-        
-        if (newImages.length > 0) {
-          try {
-            console.log('Uploading new images:', newImages.length);
-            const imageResponse = await fetch(`/api/admin/products/${selectedProduct.id}/images/upload`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                images: newImages
-              })
-            });
-            
-            if (imageResponse.ok) {
-              console.log('New images uploaded successfully');
-            } else {
-              console.warn('Failed to upload new images, but product was updated');
-            }
-          } catch (imageError) {
-            console.warn('Error uploading new images:', imageError);
-          }
-        }
 
+        // handle images omitted in demo overlay for simplicity
         setIsEditDialogOpen(false);
         setSelectedProduct(null);
         setOriginalImages([]);
@@ -364,7 +395,13 @@ export default function AdminProductsPage() {
           images: []
         });
         setSuccess(`Product "${data.product.title}" updated successfully!`);
-        fetchProducts();
+        if (data.demo || isDemo) {
+          const updated = data.product as Product;
+          persistUpdateDemo(updated);
+          setProducts(prev => prev.map(p => (p.id === updated.id ? { ...p, ...updated } : p)));
+        } else {
+          fetchProducts();
+        }
       } else {
         const errorData = await response.json();
         if (response.status === 403) {
@@ -390,7 +427,12 @@ export default function AdminProductsPage() {
 
       if (response.ok) {
         setSuccess(`Product "${productTitle}" deleted successfully!`);
-        fetchProducts();
+        if ((await response.clone().json().catch(() => ({}))).demo || isDemo) {
+          persistDeleteDemo(productId);
+          setProducts(prev => prev.filter(p => p.id !== productId));
+        } else {
+          fetchProducts();
+        }
       } else {
         const errorData = await response.json();
         if (response.status === 403) {
@@ -407,11 +449,7 @@ export default function AdminProductsPage() {
 
   const openEditDialog = (product: Product) => {
     setSelectedProduct(product);
-    
-    // Get the first variant for pricing info
     const firstVariant = product.variants?.[0] || {};
-    
-    // Store original images for comparison
     const originalProductImages = (product.images || []).map((img: any) => ({
       id: img.id,
       src: img.src,
@@ -419,7 +457,6 @@ export default function AdminProductsPage() {
       position: img.position || 0
     }));
     setOriginalImages(originalProductImages);
-    
     setFormData({
       title: product.title,
       description: product.body_html || product.description || '',
@@ -535,7 +572,7 @@ export default function AdminProductsPage() {
         <div>
           <h1 className="text-3xl font-bold">Products</h1>
           <p className="text-muted-foreground">
-            Manage your store products
+            Manage your store products{isDemo ? ' (Demo Mode: changes are simulated and stored locally)' : ''}
           </p>
         </div>
         <div className="flex gap-2">
@@ -803,7 +840,6 @@ export default function AdminProductsPage() {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction onClick={() => {
-                            // Handle bulk delete
                             selectedProducts.forEach(productId => {
                               const product = products.find(p => p.id === productId);
                               if (product) {

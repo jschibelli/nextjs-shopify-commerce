@@ -16,35 +16,29 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Await params for Next.js 15 compatibility
     const { id } = await params;
-    
-    // Verify admin authentication
     const cookieStore = await cookies();
     const tokenCookie = cookieStore.get('customer_token');
-    
     if (!tokenCookie) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const adminAuth = getShopifyAdminAuth();
     const adminUser = await adminAuth.getCurrentAdminUserFromSession();
-
     if (!adminUser) {
-      return NextResponse.json(
-        { error: 'Admin access denied' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Admin access denied' }, { status: 403 });
+    }
+
+    // DEMO GUARD
+    const isDemo = (process.env.DEMO_MODE === 'true') && cookieStore.get('demo')?.value === 'true' && cookieStore.get('demo_role')?.value === 'admin';
+    if (isDemo) {
+      const body = await request.json().catch(() => ({ images: [] }));
+      const uploadedImages = (body.images || []).map((img: any, i: number) => ({ id: `demo-image-${i}`, ...img }));
+      return NextResponse.json({ success: true, uploadedImages, demo: true, message: `Simulated upload of ${uploadedImages.length} images in demo mode` });
     }
 
     if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_ADMIN_ACCESS_TOKEN) {
-      return NextResponse.json(
-        { error: 'Shopify configuration missing' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Shopify configuration missing' }, { status: 500 });
     }
 
     const productId = extractNumericId(id);
@@ -52,10 +46,7 @@ export async function POST(
     const { images } = body;
 
     if (!images || !Array.isArray(images) || images.length === 0) {
-      return NextResponse.json(
-        { error: 'No images provided' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No images provided' }, { status: 400 });
     }
 
     const baseUrl = SHOPIFY_STORE_DOMAIN.startsWith('https://') 
@@ -64,56 +55,13 @@ export async function POST(
     
     const endpoint = `${baseUrl}/admin/api/2024-01/products/${productId}/images.json`;
 
-    console.log('Uploading images to product:', {
-      endpoint,
-      productId,
-      imageCount: images.length
-    });
+    console.log('Uploading images to product:', { endpoint, productId, imageCount: images.length });
 
     // Upload images one by one
-    const uploadedImages = [];
-    
+    const uploadedImages = [] as any[];
     for (let i = 0; i < images.length; i++) {
       const image = images[i];
-      
-      // Handle base64 images by converting to file upload
-      if (image.src.startsWith('data:')) {
-        console.log('Processing base64 image:', i);
-        
-        try {
-          // Extract the base64 data
-          const base64Data = image.src.split(',')[1];
-          const mimeType = image.src.split(':')[1].split(';')[0];
-          
-          // Convert base64 to buffer
-          const buffer = Buffer.from(base64Data, 'base64');
-          
-          // For now, we'll skip base64 images and log a message
-          // In a production environment, you'd want to:
-          // 1. Save the base64 to a temporary file
-          // 2. Upload that file to Shopify
-          // 3. Clean up the temporary file
-          console.log('Base64 image detected - would need file upload implementation');
-          console.log('Image size:', buffer.length, 'bytes');
-          console.log('MIME type:', mimeType);
-          
-          // For now, we'll skip these and just log
-          continue;
-        } catch (error) {
-          console.error('Error processing base64 image:', error);
-          continue;
-        }
-      }
-
-      // Handle regular image URLs
-      const imageData = {
-        image: {
-          src: image.src,
-          alt: image.alt || '',
-          position: i + 1
-        }
-      };
-
+      const imageData = { image: { src: image.src, alt: image.alt || '', position: i + 1 } };
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -122,29 +70,17 @@ export async function POST(
         },
         body: JSON.stringify(imageData)
       });
-
       if (response.ok) {
         const data = await response.json();
         uploadedImages.push(data.image);
-        console.log('Image uploaded successfully:', data.image.id);
-      } else {
-        const errorText = await response.text();
-        console.error('Failed to upload image:', response.status, errorText);
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      uploadedImages,
-      message: `Successfully uploaded ${uploadedImages.length} images`
-    });
+    return NextResponse.json({ success: true, uploadedImages, message: `Successfully uploaded ${uploadedImages.length} images` });
 
   } catch (error) {
     console.error('Error uploading images:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }
 
@@ -154,35 +90,27 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Await params for Next.js 15 compatibility
     const { id } = await params;
-    
-    // Verify admin authentication
     const cookieStore = await cookies();
     const tokenCookie = cookieStore.get('customer_token');
-    
     if (!tokenCookie) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const adminAuth = getShopifyAdminAuth();
     const adminUser = await adminAuth.getCurrentAdminUserFromSession();
-
     if (!adminUser) {
-      return NextResponse.json(
-        { error: 'Admin access denied' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Admin access denied' }, { status: 403 });
+    }
+
+    // DEMO GUARD
+    const isDemo = (process.env.DEMO_MODE === 'true') && cookieStore.get('demo')?.value === 'true' && cookieStore.get('demo_role')?.value === 'admin';
+    if (isDemo) {
+      return NextResponse.json({ success: true, demo: true, message: 'Simulated delete image in demo mode' });
     }
 
     if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_ADMIN_ACCESS_TOKEN) {
-      return NextResponse.json(
-        { error: 'Shopify configuration missing' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Shopify configuration missing' }, { status: 500 });
     }
 
     const productId = extractNumericId(id);
@@ -190,10 +118,7 @@ export async function DELETE(
     const imageId = searchParams.get('imageId');
 
     if (!imageId) {
-      return NextResponse.json(
-        { error: 'Image ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Image ID is required' }, { status: 400 });
     }
 
     const baseUrl = SHOPIFY_STORE_DOMAIN.startsWith('https://') 
@@ -215,10 +140,7 @@ export async function DELETE(
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Failed to delete image:', response.status, errorText);
-      return NextResponse.json(
-        { error: `Failed to delete image: ${response.status}`, details: errorText },
-        { status: response.status }
-      );
+      return NextResponse.json({ error: `Failed to delete image: ${response.status}`, details: errorText }, { status: response.status });
     }
 
     console.log('Image deleted successfully');
@@ -226,9 +148,6 @@ export async function DELETE(
 
   } catch (error) {
     console.error('Error deleting image:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 } 

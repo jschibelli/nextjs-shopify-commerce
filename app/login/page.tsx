@@ -55,31 +55,23 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
 
     try {
       // First, try admin login
-      console.log('Attempting admin login...');
       const adminResponse = await fetch('/api/auth/admin-login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
       if (adminResponse.ok) {
         const adminData = await adminResponse.json();
-        console.log('Admin login successful, redirecting to:', adminData.redirect);
-        // Trigger login success event
         window.dispatchEvent(new CustomEvent('login-success'));
         router.push(adminData.redirect);
         return;
       }
 
-      // If admin login fails, try customer login
-      console.log('Admin login failed, trying customer login...');
+      // Then customer login
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
@@ -87,15 +79,9 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
 
       if (response.ok) {
         if (data.requires2FA) {
-          // 2FA is required, redirect to verification page
           router.push(`/verify-2fa?userId=${data.userId}`);
         } else {
-          // No 2FA required, redirect based on user type
           const redirectUrl = data.redirect || '/account';
-          console.log('Login successful, redirecting to:', redirectUrl, { 
-            isStaffMember: data.isStaffMember 
-          });
-          // Trigger login success event
           window.dispatchEvent(new CustomEvent('login-success'));
           router.push(redirectUrl);
         }
@@ -106,6 +92,37 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Demo starters moved into the card
+  const startDemoCustomer = async () => {
+    const res = await fetch('/api/auth/demo', { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'customer', password })
+    });
+    if (res.ok) {
+      window.dispatchEvent(new CustomEvent('login-success'));
+      window.location.href = '/';
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || 'Invalid demo password');
+    }
+  };
+
+  const startDemoAdmin = async () => {
+    const res = await fetch('/api/auth/demo', { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'admin', password })
+    });
+    if (res.ok) {
+      window.dispatchEvent(new CustomEvent('login-success'));
+      window.location.href = '/admin';
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || 'Invalid demo password');
     }
   };
 
@@ -153,7 +170,7 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
           
           <div className="space-y-2">
             <label htmlFor="password" className="text-sm font-medium">
-              Password
+              Password (also used for demo)
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -194,15 +211,20 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
               </>
             )}
           </Button>
-          
+
+          <div className="mt-2 space-y-2">
+            <Button type="button" onClick={startDemoCustomer} className="w-full" variant="secondary">
+              Try Demo Customer
+            </Button>
+            <Button type="button" onClick={startDemoAdmin} className="w-full" variant="outline">
+              Try Demo Admin
+            </Button>
+          </div>
+
           <div className="text-center space-y-2">
             <p className="text-sm text-muted-foreground">
-              Demo credentials:
+              Demo uses a single password. Set `DEMO_PASSWORD` in `.env.local`.
             </p>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>Email: john@example.com</p>
-              <p>Password: password123</p>
-            </div>
           </div>
           
           <div className="text-center">

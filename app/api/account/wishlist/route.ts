@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     if (!customerId) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
-
+    
     const body = await request.json();
     const { id: productId } = body;
 
@@ -125,7 +125,7 @@ export async function DELETE(request: NextRequest) {
     if (!customerId) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
-
+    
     const body = await request.json();
     const { productId } = body;
 

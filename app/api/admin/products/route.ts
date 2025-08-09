@@ -1,4 +1,5 @@
 import { getShopifyAdminAuth } from 'lib/shopify/admin-auth';
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -83,6 +84,34 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+
+    // DEMO GUARD: do not write to Shopify when demo admin
+    const cookieStore = await cookies();
+    const isDemo = (process.env.DEMO_MODE === 'true') && cookieStore.get('demo')?.value === 'true' && cookieStore.get('demo_role')?.value === 'admin';
+    if (isDemo) {
+      const now = Date.now();
+      const demoProduct = {
+        id: `demo-${now}`,
+        title: body.title,
+        body_html: body.description,
+        vendor: body.vendor,
+        product_type: body.product_type,
+        tags: Array.isArray(body.tags) ? body.tags.join(',') : body.tags,
+        status: body.status || 'draft',
+        images: body.images || [],
+        variants: [
+          {
+            price: body.price || '0.00',
+            inventory_quantity: body.inventory_quantity || 0
+          }
+        ],
+        created_at: new Date(now).toISOString(),
+        updated_at: new Date(now).toISOString(),
+        published_at: new Date(now).toISOString(),
+        handle: body.handle || `demo-product-${now}`
+      };
+      return NextResponse.json({ product: demoProduct, demo: true, message: 'Simulated create in demo mode (no Shopify write)' });
+    }
 
     // Get Shopify API credentials
     const domain = process.env.SHOPIFY_STORE_DOMAIN;

@@ -55,14 +55,19 @@ export default function AccountLink() {
 
     checkAuthStatus();
 
-    // Listen for login success events
     const handleLoginSuccess = () => {
       checkAuthStatus();
     };
 
+    const handleLogoutSuccess = () => {
+      checkAuthStatus();
+    };
+
     window.addEventListener('login-success', handleLoginSuccess);
+    window.addEventListener('logout-success', handleLogoutSuccess);
     return () => {
       window.removeEventListener('login-success', handleLoginSuccess);
+      window.removeEventListener('logout-success', handleLogoutSuccess);
     };
   }, []);
 
@@ -86,7 +91,6 @@ export default function AccountLink() {
     );
   }
 
-  // If user is a staff member, show admin account dropdown
   if (sessionData.isStaffMember) {
     return (
       <DropdownMenu>
@@ -119,11 +123,10 @@ export default function AccountLink() {
               try {
                 const response = await fetch('/api/admin/logout', {
                   method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
+                  headers: { 'Content-Type': 'application/json' },
                 });
                 if (response.ok) {
+                  window.dispatchEvent(new CustomEvent('logout-success'));
                   window.location.href = '/';
                 }
               } catch (error) {
@@ -140,7 +143,6 @@ export default function AccountLink() {
     );
   }
 
-  // For regular customers, show account dropdown
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -198,11 +200,10 @@ export default function AccountLink() {
             try {
               const response = await fetch('/api/auth/logout', {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
               });
               if (response.ok) {
+                window.dispatchEvent(new CustomEvent('logout-success'));
                 window.location.href = '/';
               }
             } catch (error) {

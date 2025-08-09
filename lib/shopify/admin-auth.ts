@@ -67,12 +67,12 @@ export class ShopifyAdminAuth {
       return {
         id: staffMember.id,
         email: staffMember.email,
-        firstName: staffMember.first_name,
-        lastName: staffMember.last_name,
+        first_name: staffMember.first_name,
+        last_name: staffMember.last_name,
         role: staffMember.role,
         permissions: staffMember.permissions,
         shopifyUserId: staffMember.id
-      };
+      } as any;
     } catch (error) {
       return null;
     }
@@ -80,6 +80,26 @@ export class ShopifyAdminAuth {
 
   async getCurrentAdminUserFromSession(): Promise<ShopifyAdminUser | null> {
     try {
+      // DEMO short-circuit
+      try {
+        const { cookies } = await import('next/headers');
+        const cookieStore = await cookies();
+        const isDemo = (process.env.DEMO_MODE === 'true') && cookieStore.get('demo')?.value === 'true';
+        const demoRole = cookieStore.get('demo_role')?.value;
+        if (isDemo && demoRole === 'admin') {
+          const email = process.env.DEMO_ADMIN_EMAIL || 'demo+admin@example.com';
+          return {
+            id: 'demo_admin',
+            email,
+            firstName: 'Demo',
+            lastName: 'Admin',
+            role: 'admin',
+            permissions: ['read','write','delete','moderate','manage_settings'],
+            shopifyUserId: 'demo_admin'
+          };
+        }
+      } catch {}
+
       // Check if there's an admin session token
       const tokenCookie = await this.getSessionCookie();
       if (!tokenCookie) {

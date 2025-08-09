@@ -23,35 +23,35 @@ export default function DynamicNavigation() {
   const [lastCheck, setLastCheck] = useState(0);
   const pathname = usePathname();
 
-  const checkAuthStatus = async () => {
-    try {
+    const checkAuthStatus = async () => {
+      try {
       // Add cache-busting parameter to ensure fresh data
       const response = await fetch(`/api/auth/check-session?t=${Date.now()}`, {
         cache: 'no-store'
       });
-      if (response.ok) {
-        const data = await response.json();
+        if (response.ok) {
+          const data = await response.json();
         console.log('DynamicNavigation auth check result:', data);
-        setSessionData(data);
+          setSessionData(data);
         setLastCheck(Date.now());
-      } else {
+        } else {
+          setSessionData({
+            isAuthenticated: false,
+            user: null,
+            isStaffMember: false
+          });
+        }
+      } catch (error) {
+      console.error('Auth check error in DynamicNavigation:', error);
         setSessionData({
           isAuthenticated: false,
           user: null,
           isStaffMember: false
         });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Auth check error in DynamicNavigation:', error);
-      setSessionData({
-        isAuthenticated: false,
-        user: null,
-        isStaffMember: false
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
   useEffect(() => {
     checkAuthStatus();

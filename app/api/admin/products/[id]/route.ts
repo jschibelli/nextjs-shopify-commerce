@@ -97,44 +97,34 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Await params for Next.js 15 compatibility
     const { id } = await params;
-    
-    // Verify admin authentication
+
     const cookieStore = await cookies();
     const tokenCookie = cookieStore.get('customer_token');
-    
     if (!tokenCookie) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const adminAuth = getShopifyAdminAuth();
     const adminUser = await adminAuth.getCurrentAdminUserFromSession();
-
     if (!adminUser) {
-      return NextResponse.json(
-        { error: 'Admin access denied' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Admin access denied' }, { status: 403 });
+    }
+
+    // DEMO GUARD
+    const isDemo = (process.env.DEMO_MODE === 'true') && cookieStore.get('demo')?.value === 'true' && cookieStore.get('demo_role')?.value === 'admin';
+    const body = await request.json();
+    if (isDemo) {
+      const now = new Date().toISOString();
+      return NextResponse.json({ product: { id, ...body, updated_at: now }, demo: true, message: 'Simulated update in demo mode (no Shopify write)' });
     }
 
     if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_ADMIN_ACCESS_TOKEN) {
-      return NextResponse.json(
-        { error: 'Shopify configuration missing' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Shopify configuration missing' }, { status: 500 });
     }
 
     const productId = extractNumericId(id);
-    const body = await request.json();
-
-    const baseUrl = SHOPIFY_STORE_DOMAIN.startsWith('https://') 
-      ? SHOPIFY_STORE_DOMAIN 
-      : `https://${SHOPIFY_STORE_DOMAIN}`;
-    
+    const baseUrl = SHOPIFY_STORE_DOMAIN.startsWith('https://') ? SHOPIFY_STORE_DOMAIN : `https://${SHOPIFY_STORE_DOMAIN}`;
     const endpoint = `${baseUrl}/admin/api/2024-01/products/${productId}.json`;
 
     console.log('Updating product:', endpoint);
@@ -151,10 +141,7 @@ export async function PUT(
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Failed to update product:', response.status, errorText);
-      return NextResponse.json(
-        { error: `Failed to update product: ${response.status}`, details: errorText },
-        { status: response.status }
-      );
+      return NextResponse.json({ error: `Failed to update product: ${response.status}`, details: errorText }, { status: response.status });
     }
 
     const data = await response.json();
@@ -164,10 +151,7 @@ export async function PUT(
 
   } catch (error) {
     console.error('Error updating product:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }
 
@@ -177,42 +161,32 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Await params for Next.js 15 compatibility
     const { id } = await params;
-    
-    // Verify admin authentication
+
     const cookieStore = await cookies();
     const tokenCookie = cookieStore.get('customer_token');
-    
     if (!tokenCookie) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const adminAuth = getShopifyAdminAuth();
     const adminUser = await adminAuth.getCurrentAdminUserFromSession();
-
     if (!adminUser) {
-      return NextResponse.json(
-        { error: 'Admin access denied' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Admin access denied' }, { status: 403 });
+    }
+
+    // DEMO GUARD
+    const isDemo = (process.env.DEMO_MODE === 'true') && cookieStore.get('demo')?.value === 'true' && cookieStore.get('demo_role')?.value === 'admin';
+    if (isDemo) {
+      return NextResponse.json({ success: true, demo: true, message: 'Simulated delete in demo mode (no Shopify write)' });
     }
 
     if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_ADMIN_ACCESS_TOKEN) {
-      return NextResponse.json(
-        { error: 'Shopify configuration missing' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Shopify configuration missing' }, { status: 500 });
     }
 
     const productId = extractNumericId(id);
-    const baseUrl = SHOPIFY_STORE_DOMAIN.startsWith('https://') 
-      ? SHOPIFY_STORE_DOMAIN 
-      : `https://${SHOPIFY_STORE_DOMAIN}`;
-    
+    const baseUrl = SHOPIFY_STORE_DOMAIN.startsWith('https://') ? SHOPIFY_STORE_DOMAIN : `https://${SHOPIFY_STORE_DOMAIN}`;
     const endpoint = `${baseUrl}/admin/api/2024-01/products/${productId}.json`;
 
     console.log('Deleting product:', endpoint);
@@ -228,10 +202,7 @@ export async function DELETE(
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Failed to delete product:', response.status, errorText);
-      return NextResponse.json(
-        { error: `Failed to delete product: ${response.status}`, details: errorText },
-        { status: response.status }
-      );
+      return NextResponse.json({ error: `Failed to delete product: ${response.status}`, details: errorText }, { status: response.status });
     }
 
     console.log('Product deleted successfully');
@@ -239,9 +210,6 @@ export async function DELETE(
 
   } catch (error) {
     console.error('Error deleting product:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 } 
