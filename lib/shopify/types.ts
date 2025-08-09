@@ -133,6 +133,29 @@ export type ShopifyProduct = {
   seo: SEO;
   tags: string[];
   updatedAt: string;
+  reviews?: Connection<ProductReview>;
+};
+
+export type ProductReview = {
+  id: string;
+  title: string;
+  content: string;
+  rating: number;
+  author: {
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  status: string;
+};
+
+export type ReviewStats = {
+  averageRating: number;
+  totalReviews: number;
+  ratingDistribution: {
+    [key: number]: number;
+  };
 };
 
 export type ShopifyCartOperation = {
@@ -453,5 +476,117 @@ export type ShopifyCustomerRecoverOperation = {
   };
   variables: {
     email: string;
+  };
+};
+
+export type ShopifyCustomerOrdersOperation = {
+  data: {
+    customer: {
+      orders: Connection<CustomerOrder>;
+    };
+  };
+  variables: {
+    customerAccessToken: string;
+    first: number;
+  };
+};
+
+export type ShopifyOrderOperation = {
+  data: {
+    customer: {
+      order: CustomerOrder | null;
+    };
+  };
+  variables: {
+    customerAccessToken: string;
+    orderId: string;
+  };
+};
+
+export type ShopifyProductReviewsOperation = {
+  data: {
+    product: {
+      id: string;
+      reviews: Connection<ProductReview>;
+    };
+  };
+  variables: {
+    productId: string;
+    first: number;
+    after?: string;
+  };
+};
+
+export type ShopifyProductReviewStatsOperation = {
+  data: {
+    product: {
+      id: string;
+      reviews: Connection<{
+        rating: number;
+        status: string;
+      }>;
+    };
+  };
+  variables: {
+    productId: string;
+  };
+};
+
+export type ShopifyCreateProductReviewOperation = {
+  data: {
+    productReviewCreate: {
+      productReview: ProductReview;
+      userErrors: {
+        field: string[];
+        message: string;
+      }[];
+    };
+  };
+  variables: {
+    input: {
+      productId: string;
+      title: string;
+      content: string;
+      rating: number;
+      authorName: string;
+      authorEmail: string;
+    };
+  };
+};
+
+export type ShopifyUpdateProductReviewOperation = {
+  data: {
+    productReviewUpdate: {
+      productReview: ProductReview;
+      userErrors: {
+        field: string[];
+        message: string;
+      }[];
+    };
+  };
+  variables: {
+    input: {
+      id: string;
+      title?: string;
+      content?: string;
+      rating?: number;
+    };
+  };
+};
+
+export type ShopifyDeleteProductReviewOperation = {
+  data: {
+    productReviewDelete: {
+      deletedProductReviewId: string;
+      userErrors: {
+        field: string[];
+        message: string;
+      }[];
+    };
+  };
+  variables: {
+    input: {
+      id: string;
+    };
   };
 };

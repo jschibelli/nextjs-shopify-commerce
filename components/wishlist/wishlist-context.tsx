@@ -1,26 +1,28 @@
-'use client';
+"use client"
 
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 interface WishlistItem {
   id: string;
-  name: string;
-  price: number;
-  originalPrice: number;
-  image: string;
-  rating: number;
-  reviews: number;
-  inStock: boolean;
-  addedDate: string;
-  category: string;
+  title: string;
   handle: string;
+  featuredImage: {
+    url: string;
+    altText: string;
+  };
+  priceRange: {
+    maxVariantPrice: {
+      amount: string;
+      currencyCode: string;
+    };
+  };
 }
 
 interface WishlistContextType {
   wishlistItems: WishlistItem[];
   wishlistCount: number;
   isInWishlist: (productId: string) => boolean;
-  addToWishlist: (productId: string) => Promise<void>;
+  addToWishlist: (item: WishlistItem) => Promise<void>;
   removeFromWishlist: (productId: string) => Promise<void>;
   refreshWishlist: () => Promise<void>;
   isLoading: boolean;
@@ -36,16 +38,27 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('/api/account/wishlist');
-      if (response.status === 401) {
-        // User is not authenticated
+      const response = await fetch('/api/auth/check-session');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.isAuthenticated) {
+          // Don't set authenticated for admin users - they don't have wishlists
+          if (data.isStaffMember) {
+            setIsAuthenticated(false);
+            setWishlistItems([]);
+            return false;
+          }
+          setIsAuthenticated(true);
+          return true;
+        } else {
+          setIsAuthenticated(false);
+          setWishlistItems([]);
+          return false;
+        }
+      } else {
         setIsAuthenticated(false);
-        setWishlistItems([]); // Clear wishlist for logged out users
+        setWishlistItems([]);
         return false;
-      } else if (response.ok) {
-        // User is authenticated
-        setIsAuthenticated(true);
-        return true;
       }
     } catch (error) {
       console.error('Failed to check auth status:', error);
@@ -53,90 +66,107 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       setWishlistItems([]);
       return false;
     }
-    return false;
   };
 
   const fetchWishlistItems = async () => {
+    if (!isAuthenticated) return;
+
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const response = await fetch('/api/account/wishlist');
-      
-      if (response.status === 401) {
+      if (response.ok) {
+        const data = await response.json();
+        setWishlistItems(data.items || []);
+      } else if (response.status === 401) {
         // User is not authenticated
         setIsAuthenticated(false);
         setWishlistItems([]);
-        return;
-      }
-      
-      if (response.ok) {
-        const data = await response.json();
-        const items = data.wishlistItems || [];
-        setWishlistItems(items);
-        setIsAuthenticated(true);
+      } else {
+        console.error('Failed to fetch wishlist items');
       }
     } catch (error) {
-      console.error('Failed to fetch wishlist:', error);
-      setIsAuthenticated(false);
-      setWishlistItems([]);
+      console.error('Error fetching wishlist:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const isInWishlist = (productId: string) => {
+  const isInWishlist = (productId: string): boolean => {
     return wishlistItems.some(item => item.id === productId);
   };
 
-  const addToWishlist = async (productId: string) => {
+  const addToWishlist = async (item: WishlistItem): Promise<void> => {
+    if (!isAuthenticated) {
+      console.warn('User must be logged in to add items to wishlist');
+      return;
+    }
+
+    if (isInWishlist(item.id)) {
+      console.warn('Item already in wishlist');
+      return;
+    }
+
+    setIsLoading(true);
     try {
       const response = await fetch('/api/account/wishlist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify(item),
+      });
+
+      if (response.ok) {
+        setWishlistItems(prev => [...prev, item]);
+      } else if (response.status === 401) {
+        setIsAuthenticated(false);
+        setWishlistItems([]);
+      } else {
+        console.error('Failed to add item to wishlist');
+      }
+    } catch (error) {
+      console.error('Error adding to wishlist:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const removeFromWishlist = async (productId: string): Promise<void> => {
+    if (!isAuthenticated) {
+      console.warn('User must be logged in to remove items from wishlist');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/account/wishlist', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ productId }),
       });
 
-      if (response.status === 401) {
-        // User is not authenticated, clear wishlist
+      if (response.ok) {
+        setWishlistItems(prev => prev.filter(item => item.id !== productId));
+      } else if (response.status === 401) {
         setIsAuthenticated(false);
         setWishlistItems([]);
-        return;
-      }
-
-      if (response.ok) {
-        // Refresh the wishlist to get the updated data
-        await fetchWishlistItems();
+      } else {
+        console.error('Failed to remove item from wishlist');
       }
     } catch (error) {
-      console.error('Failed to add to wishlist:', error);
+      console.error('Error removing from wishlist:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const removeFromWishlist = async (productId: string) => {
-    try {
-      const response = await fetch(`/api/account/wishlist?itemId=${productId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.status === 401) {
-        // User is not authenticated, clear wishlist
-        setIsAuthenticated(false);
-        setWishlistItems([]);
-        return;
-      }
-
-      if (response.ok) {
-        // Refresh the wishlist to get the updated data
-        await fetchWishlistItems();
-      }
-    } catch (error) {
-      console.error('Failed to remove from wishlist:', error);
+  const refreshWishlist = async (): Promise<void> => {
+    const isAuth = await checkAuthStatus();
+    if (isAuth) {
+      await fetchWishlistItems();
     }
-  };
-
-  const refreshWishlist = async () => {
-    await fetchWishlistItems();
   };
 
   // Check authentication status and fetch wishlist on component mount
@@ -149,7 +179,20 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     };
 
     initializeWishlist();
-  }, []);
+
+    // Set up periodic authentication check (every 30 seconds)
+    const authCheckInterval = setInterval(async () => {
+      const isAuth = await checkAuthStatus();
+      if (isAuth && wishlistItems.length === 0) {
+        // If authenticated but no wishlist items, try to fetch them
+        await fetchWishlistItems();
+      }
+    }, 30000);
+
+    return () => {
+      clearInterval(authCheckInterval);
+    };
+  }, [wishlistItems.length]);
 
   // Listen for authentication changes (login/logout)
   useEffect(() => {
@@ -164,11 +207,32 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        // Page became visible, check auth status
-        setTimeout(() => {
-          refreshWishlist();
+        // Page became visible, check auth status and refresh wishlist
+        setTimeout(async () => {
+          const isAuth = await checkAuthStatus();
+          if (isAuth) {
+            await fetchWishlistItems();
+          }
         }, 100);
       }
+    };
+
+    const handleLogoutSuccess = () => {
+      // Clear client-side wishlist state on logout, but don't clear server data
+      console.log('Wishlist: Logout event received, clearing client-side wishlist state');
+      setIsAuthenticated(false);
+      setWishlistItems([]);
+    };
+
+    const handleLoginSuccess = () => {
+      // Refresh wishlist when user logs in
+      console.log('Wishlist: Login success event received, refreshing wishlist');
+      setTimeout(async () => {
+        const isAuth = await checkAuthStatus();
+        if (isAuth) {
+          await fetchWishlistItems();
+        }
+      }, 500); // Small delay to ensure session is set
     };
 
     // Listen for storage changes (cross-tab logout)
@@ -176,10 +240,18 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     
     // Listen for page visibility changes (user navigated back)
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Listen for logout success event
+    window.addEventListener('logout-success', handleLogoutSuccess);
+    
+    // Listen for login success event
+    window.addEventListener('login-success', handleLoginSuccess);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('logout-success', handleLogoutSuccess);
+      window.removeEventListener('login-success', handleLoginSuccess);
     };
   }, []);
 

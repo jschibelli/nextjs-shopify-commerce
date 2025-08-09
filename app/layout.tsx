@@ -1,11 +1,11 @@
 import { GeistSans } from 'geist/font/sans';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
-import { CartProvider } from 'components/cart/cart-context';
-import CartModal from 'components/cart/modal';
+import { EnhancedCartProvider } from 'components/cart/enhanced-cart-context';
+import EnhancedCartModal from 'components/cart/enhanced-cart-modal';
 import DevRevalidateButton from 'components/dev-revalidate-button';
 import Footer from 'components/layout/footer';
-import Navbar from 'components/layout/navbar';
+import DynamicNavigation from 'components/layout/navbar/dynamic-navigation';
 import { ThemeProvider } from 'components/theme-provider';
 import { WelcomeToast } from 'components/welcome-toast';
 import { WishlistProvider } from 'components/wishlist/wishlist-context';
@@ -64,6 +64,13 @@ export const metadata: Metadata = {
   }
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children
 }: {
@@ -73,7 +80,7 @@ export default function RootLayout({
   const cart = getCart();
 
   return (
-    <html lang="en" className={GeistSans.variable}>
+    <html lang="en" className={GeistSans.variable} suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider
           attribute="class"
@@ -81,21 +88,21 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <CartProvider cartPromise={cart}>
+          <EnhancedCartProvider cartPromise={cart}>
             <WishlistProvider>
               <div className="flex min-h-screen flex-col">
-                <Navbar />
+                <DynamicNavigation />
                 <main className="flex-1">
                   {children}
                 </main>
                 <Footer />
               </div>
-              <CartModal />
+              <EnhancedCartModal />
               <WelcomeToast />
               <DevRevalidateButton />
               <Toaster closeButton />
             </WishlistProvider>
-          </CartProvider>
+          </EnhancedCartProvider>
         </ThemeProvider>
       </body>
     </html>

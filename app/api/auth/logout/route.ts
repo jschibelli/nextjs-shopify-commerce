@@ -1,42 +1,36 @@
 import { getAuth } from 'lib/auth';
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
     const auth = getAuth();
+    await auth.initializeFromCookies();
+    const user = await auth.getCurrentUser();
     
-    // Attempt to logout from Shopify (don't fail if this errors)
-    try {
-      await auth.logout();
-    } catch (error) {
-      console.error('Error during Shopify logout:', error);
-      // Continue with local logout even if Shopify logout fails
+    // Log the logout but don't clear wishlist data
+    if (user) {
+      console.log('Logging out customer user:', user.email);
     }
 
-    // Get the redirect URL from the request body or use default
-    const { redirectUrl = '/' } = await request.json().catch(() => ({}));
+    // Clear the session cookie
+    const cookieStore = await cookies();
+    cookieStore.delete('customer_token');
 
-    // Create response with redirect
-    const response = NextResponse.json({ 
+    return NextResponse.json({ 
       success: true, 
-      message: 'Logged out successfully',
-      redirectUrl 
+      message: 'Logged out successfully' 
     });
-
-    // Set the cookie deletion in the response
-    response.cookies.delete('customer_token');
-
-    return response;
   } catch (error) {
     console.error('Logout error:', error);
     
-    // Even if there's an error, try to clear the cookie
-    const response = NextResponse.json(
-      { error: 'Failed to logout properly, but session cleared' },
+    // Still clear the cookie even if there's an error
+    const cookieStore = await cookies();
+    cookieStore.delete('customer_token');
+    
+    return NextResponse.json(
+      { error: 'Failed to logout. Please try again.' },
       { status: 500 }
     );
-    
-    response.cookies.delete('customer_token');
-    return response;
   }
 } 

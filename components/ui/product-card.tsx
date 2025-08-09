@@ -4,6 +4,7 @@ import { EyeIcon, HeartIcon, ShoppingBagIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { ReviewStars } from '@/components/product/review-stars';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,10 @@ interface ProductCardProps {
       title: string;
       availableForSale: boolean;
     }>;
+    reviewStats?: {
+      averageRating: number;
+      totalReviews: number;
+    };
   };
   variant?: 'default' | 'featured';
   className?: string;
@@ -73,65 +78,52 @@ export function ProductCard({ product, variant = 'default', className }: Product
         </div>
 
         {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1">
+        <div className="absolute top-3 left-3 flex flex-col gap-2">
           {isNew && (
-            <Badge variant="secondary" className="bg-green-500 text-white text-xs">
+            <Badge variant="secondary" className="bg-green-500 text-white">
               New
             </Badge>
           )}
           {isHot && (
-            <Badge variant="secondary" className="bg-red-500 text-white text-xs">
+            <Badge variant="secondary" className="bg-red-500 text-white">
               Hot
             </Badge>
           )}
           {isOnSale && (
-            <Badge variant="secondary" className="bg-orange-500 text-white text-xs">
+            <Badge variant="secondary" className="bg-orange-500 text-white">
               Sale
             </Badge>
           )}
-        </div>
-
-        {/* Add to Cart Button */}
-        <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-            <ShoppingBagIcon className="h-4 w-4 mr-2" />
-            Add to Cart
-          </Button>
         </div>
       </div>
 
       {/* Product Info */}
       <div className="mt-4 space-y-2">
-        <Link href={`/product/${product.handle}`} className="block group">
-          <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2">
+        <Link href={`/product/${product.handle}`} className="block">
+          <h3 className="font-medium text-sm line-clamp-2 group-hover:text-primary transition-colors">
             {product.title}
           </h3>
         </Link>
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-foreground">
-              ${parseFloat(product.priceRange.maxVariantPrice.amount).toFixed(2)}
-            </span>
-            {isOnSale && (
-              <span className="text-sm text-muted-foreground line-through">
-                ${(parseFloat(product.priceRange.maxVariantPrice.amount) * 1.3).toFixed(2)}
-              </span>
-            )}
-          </div>
-          
-          {variant === 'featured' && (
-            <div className="text-xs text-muted-foreground">
-              {product.variants?.length || 0} variants
-            </div>
-          )}
-        </div>
 
-        {variant === 'featured' && product.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {product.description}
-          </p>
+        {/* Rating */}
+        {product.reviewStats && product.reviewStats.totalReviews > 0 && (
+          <div className="flex items-center gap-1">
+            <ReviewStars rating={product.reviewStats.averageRating} size="sm" />
+            <span className="text-xs text-muted-foreground">
+              ({product.reviewStats.totalReviews})
+            </span>
+          </div>
         )}
+
+        <div className="flex items-center justify-between">
+          <div className="font-semibold text-sm">
+            ${parseFloat(product.priceRange.maxVariantPrice.amount).toFixed(2)}
+          </div>
+          <Button size="sm" className="h-8 px-3">
+            <ShoppingBagIcon className="h-4 w-4 mr-1" />
+            Add to Cart
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { Badge } from 'components/ui/badge';
 import { Button } from 'components/ui/button';
 import { useToast } from 'components/ui/use-toast';
 import { AlertTriangle, CheckCircle, Clock, Computer, Monitor, Smartphone, Tablet, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 interface Session {
@@ -21,6 +22,69 @@ export function SessionManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [revokingSession, setRevokingSession] = useState<string | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch('/api/auth/check-session');
+        if (!response.ok) {
+          // User is not authenticated, redirect to login
+          router.push('/login');
+          return;
+        }
+
+        const data = await response.json();
+        if (!data.isAuthenticated) {
+          // User is not authenticated, redirect to login
+          router.push('/login');
+          return;
+        }
+      } catch (error) {
+        // Handle error silently
+      }
+    };
+
+    // Only check on account pages
+    if (window.location.pathname.startsWith('/account')) {
+      checkAuthStatus();
+    }
+  }, [router]);
+
+  useEffect(() => {
+    const handleLogout = async () => {
+      try {
+        const response = await fetch('/api/auth/logout', { method: 'POST' });
+        if (response.ok) {
+          // Clear any client-side state
+          localStorage.removeItem('customer_token');
+          sessionStorage.removeItem('customer_token');
+          localStorage.removeItem('current_session_id');
+          
+          // Dispatch logout event for other components to listen to
+          window.dispatchEvent(new CustomEvent('logout-success'));
+          
+          // Redirect to home page
+          router.push('/');
+          router.refresh();
+        } else {
+          // Still redirect even if logout API fails
+          router.push('/');
+          router.refresh();
+        }
+      } catch (error) {
+        // Redirect even if there's an error
+        router.push('/');
+        router.refresh();
+      }
+    };
+
+    // Listen for logout events
+    window.addEventListener('logout-success', handleLogout);
+    return () => {
+      window.removeEventListener('logout-success', handleLogout);
+    };
+  }, [router]);
 
   useEffect(() => {
     fetchSessions();
@@ -32,8 +96,7 @@ export function SessionManagement() {
       
       if (response.status === 401) {
         // User is not authenticated, redirect to login
-        console.log('Session management: User not authenticated, redirecting to login');
-        window.location.href = '/login';
+        router.push('/login');
         return;
       }
       
@@ -73,8 +136,7 @@ export function SessionManagement() {
 
       if (response.status === 401) {
         // User is not authenticated, redirect to login
-        console.log('Session management: User not authenticated during revoke, redirecting to login');
-        window.location.href = '/login';
+        router.push('/login');
         return;
       }
 

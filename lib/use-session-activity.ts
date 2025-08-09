@@ -32,8 +32,9 @@ export function useSessionActivity() {
             // User is not authenticated, clear session ID
             localStorage.removeItem('current_session_id');
             console.log('Session activity: User not authenticated, cleared session ID');
+            return;
           } else {
-            console.error('Failed to update session activity:', response.status);
+            console.error('Session activity: Failed to update session activity:', response.status);
             // Don't clear session ID on other errors, just log them
           }
         } else {
@@ -45,7 +46,7 @@ export function useSessionActivity() {
           }
         }
       } catch (error) {
-        console.error('Failed to update session activity:', error);
+        console.error('Session activity: Failed to update session activity:', error);
         // Don't clear session ID on network errors, just log them
         // Only clear on authentication errors (401)
       }
@@ -89,8 +90,9 @@ export function useSessionActivity() {
             // User is not authenticated, clear session ID
             localStorage.removeItem('current_session_id');
             console.log('Session activity: User not authenticated, cleared session ID');
+            return;
           } else {
-            console.error('Failed to update session activity:', response.status);
+            console.error('Session activity: Failed to update session activity:', response.status);
             // Don't clear session ID on other errors
           }
         } else {
@@ -102,7 +104,7 @@ export function useSessionActivity() {
           }
         }
       } catch (error) {
-        console.error('Failed to update session activity:', error);
+        console.error('Session activity: Failed to update session activity:', error);
         // Don't clear session ID on network errors, just log them
       }
     };

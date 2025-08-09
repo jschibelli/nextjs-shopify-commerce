@@ -1,5 +1,6 @@
 import { createSession, detectDevice, getLocationFromIP, getTwoFactorData } from 'lib/security';
 import { createCustomerAccessToken, getCustomer } from 'lib/shopify';
+import { getShopifyAdminAuth } from 'lib/shopify/admin-auth';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -54,6 +55,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if user is a Shopify staff member
+    const adminAuth = getShopifyAdminAuth();
+    const adminUser = await adminAuth.getCurrentShopifyAdminUser();
+    
+    console.log('Checking if user is Shopify staff member:', { 
+      email: customer.email, 
+      isStaffMember: !!adminUser,
+      role: adminUser?.role 
+    });
+
     // Check if 2FA is enabled for this user
     const twoFactorData = getTwoFactorData(customer.id);
     console.log('2FA check for user:', customer.id, '2FA data:', twoFactorData);
@@ -68,7 +79,8 @@ export async function POST(request: NextRequest) {
         expires_in: 3600,
         scope: 'customer_read_customers,customer_read_orders',
         customer_id: customer.id,
-        requires2FA: true
+        requires2FA: true,
+        isStaffMember: !!adminUser
       };
 
       const cookieStore = await cookies();
@@ -76,6 +88,7 @@ export async function POST(request: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
+        path: '/',
         maxAge: 10 * 60 // 10 minutes for 2FA verification
       });
 
@@ -83,6 +96,7 @@ export async function POST(request: NextRequest) {
         success: true,
         requires2FA: true,
         userId: customer.id,
+        isStaffMember: !!adminUser,
         message: 'Two-factor authentication required'
       });
     }
@@ -118,14 +132,23 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/',
       maxAge: 30 * 24 * 60 * 60 // 30 days
     });
 
     console.log('Session created for user:', customer.id, 'Session ID:', session.id);
 
+    // Determine redirect URL based on user type
+    const redirectUrl = adminUser ? '/admin' : '/account';
+    console.log('Redirecting user to:', redirectUrl, { 
+      isStaffMember: !!adminUser, 
+      role: adminUser?.role 
+    });
+
     return NextResponse.json({ 
       success: true, 
-      redirect: '/account',
+      redirect: redirectUrl,
+      isStaffMember: !!adminUser,
       user: { 
         id: customer.id, 
         email: customer.email, 

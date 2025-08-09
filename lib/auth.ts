@@ -1,4 +1,4 @@
-import { deleteCustomerAccessToken, getCustomer } from 'lib/shopify';
+import { deleteCustomerAccessToken, getCustomer, getCustomerOrders, getOrder } from 'lib/shopify';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -63,7 +63,19 @@ export class CustomerAccountAuth {
       return customer;
     } catch (error) {
       console.error('Error getting current user:', error);
-      // Token might be invalid, clear it but don't delete cookie here
+      
+      // If the error is "Customer not found", the token might be invalid
+      // or the customer might have been deleted from Shopify
+      if (error instanceof Error && error.message === 'Customer not found') {
+        console.log('Customer not found in Shopify, clearing invalid token');
+        // Clear the invalid token
+        this.token = null;
+        const cookieStore = await cookies();
+        cookieStore.delete('customer_token');
+        return null;
+      }
+      
+      // For other errors, just clear the token but don't delete cookie yet
       this.token = null;
       return null;
     }
@@ -78,12 +90,28 @@ export class CustomerAccountAuth {
     }
 
     try {
-      // This would need to be implemented with Shopify's order API
-      // For now, return empty array
-      return [];
+      const orders = await getCustomerOrders(this.token.access_token, 50);
+      return orders;
     } catch (error) {
       console.error('Error getting customer orders:', error);
       return [];
+    }
+  }
+
+  // Get a specific order
+  async getOrder(orderId: string): Promise<any | null> {
+    await this.initializeFromCookies();
+    
+    if (!this.token) {
+      return null;
+    }
+
+    try {
+      const order = await getOrder(this.token.access_token, orderId);
+      return order;
+    } catch (error) {
+      console.error('Error getting order:', error);
+      return null;
     }
   }
 
