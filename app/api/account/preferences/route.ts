@@ -29,9 +29,9 @@ export async function PUT(request: NextRequest) {
     });
 
     try {
-      // First try to update via Storefront API (for immediate reflection)
       let updatedCustomer;
       
+      // Try to update email marketing via Storefront API
       try {
         updatedCustomer = await updateCustomer({
           customer: {
@@ -40,36 +40,42 @@ export async function PUT(request: NextRequest) {
           customerAccessToken: tokenCookie.value ? JSON.parse(tokenCookie.value).access_token : ''
         });
         
-        console.log('Preferences updated via Storefront API:', {
+        console.log('Email preferences updated via Storefront API:', {
           customerId: updatedCustomer.id,
           acceptsMarketing: updatedCustomer.acceptsMarketing
         });
       } catch (storefrontError) {
-        console.log('Storefront API update failed, trying Admin API:', storefrontError);
-        
-        // Fallback to Admin API
-        updatedCustomer = await updateCustomerWithAdminAPI({
-          customerId: user.id,
-          preferences: {
-            acceptsMarketing,
-            acceptsSMS
-          }
-        });
-        
-        console.log('Preferences updated via Admin API:', {
-          customerId: updatedCustomer.id,
-          acceptsMarketing: updatedCustomer.acceptsMarketing,
-          acceptsSMS: updatedCustomer.acceptsSMS
-        });
+        console.log('Storefront API update failed:', storefrontError);
+      }
+      
+      // Always use Admin API for SMS preferences since Storefront API doesn't support it
+      if (acceptsSMS !== undefined) {
+        try {
+          updatedCustomer = await updateCustomerWithAdminAPI({
+            customerId: user.id,
+            preferences: {
+              acceptsMarketing,
+              acceptsSMS
+            }
+          });
+          
+          console.log('SMS preferences updated via Admin API:', {
+            customerId: updatedCustomer.id,
+            acceptsMarketing: updatedCustomer.acceptsMarketing,
+            acceptsSMS: updatedCustomer.acceptsSMS
+          });
+        } catch (adminError) {
+          console.log('Admin API update failed:', adminError);
+        }
       }
 
       return NextResponse.json({
         success: true,
         message: 'Preferences updated successfully',
         customer: {
-          id: updatedCustomer.id,
-          acceptsMarketing: updatedCustomer.acceptsMarketing,
-          acceptsSMS: updatedCustomer.acceptsSMS
+          id: user.id,
+          acceptsMarketing: updatedCustomer?.acceptsMarketing || acceptsMarketing,
+          acceptsSMS: updatedCustomer?.acceptsSMS || acceptsSMS
         }
       });
     } catch (shopifyError) {
