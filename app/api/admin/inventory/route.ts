@@ -1,4 +1,5 @@
 import { getShopifyAdminAuth } from 'lib/shopify/admin-auth';
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -179,6 +180,13 @@ export async function POST(request: NextRequest) {
         error: 'Missing required fields',
         details: 'inventoryItemId, locationId, and available are required'
       }, { status: 400 });
+    }
+
+    // Demo guard: simulate without Shopify write
+    const cookieStore = await cookies();
+    const isDemo = (process.env.DEMO_MODE === 'true') && cookieStore.get('demo')?.value === 'true' && cookieStore.get('demo_role')?.value === 'admin';
+    if (isDemo) {
+      return NextResponse.json({ success: true, demo: true, inventoryLevel: { inventory_item_id: inventoryItemId, location_id: locationId, available }, message: 'Simulated inventory update in demo mode' });
     }
 
     // Get Shopify API credentials

@@ -621,7 +621,32 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="description">Description</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="description">Description</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const res = await fetch('/api/ai/generate-description', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            title: formData.title,
+                            vendor: formData.vendor,
+                            productType: formData.product_type,
+                            tags: formData.tags
+                          })
+                        })
+                        const json = await res.json()
+                        if (json.description) {
+                          setFormData(prev => ({ ...prev, description: json.description }))
+                        }
+                      }}
+                    >
+                      Generate with AI
+                    </Button>
+                  </div>
                   <Textarea
                     id="description"
                     value={formData.description}
@@ -1155,7 +1180,32 @@ export default function AdminProductsPage() {
                 </div>
                 
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-description">Description</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="edit-description">Description</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const res = await fetch('/api/ai/generate-description', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            title: formData.title,
+                            vendor: formData.vendor,
+                            productType: formData.product_type,
+                            tags: formData.tags
+                          })
+                        })
+                        const json = await res.json()
+                        if (json.description) {
+                          setFormData(prev => ({ ...prev, description: json.description }))
+                        }
+                      }}
+                    >
+                      Generate with AI
+                    </Button>
+                  </div>
                   <Textarea
                     id="edit-description"
                     value={formData.description}

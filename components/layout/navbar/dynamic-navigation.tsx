@@ -70,7 +70,7 @@ export default function DynamicNavigation() {
     // Listen for focus events to refresh when returning to tab
     const handleFocus = () => {
       const now = Date.now();
-      if (now - lastCheck > 5000) { // Only refresh if last check was more than 5 seconds ago
+      if (now - lastCheck > 30000) { // Only refresh if last check was more than 30 seconds ago
         checkAuthStatus();
       }
     };
@@ -79,14 +79,10 @@ export default function DynamicNavigation() {
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('focus', handleFocus);
 
-    // Also check periodically to catch any auth state changes
-    const interval = setInterval(checkAuthStatus, 5000); // Check every 5 seconds
-
     return () => {
       window.removeEventListener('login-success', handleLoginSuccess);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('focus', handleFocus);
-      clearInterval(interval);
     };
   }, []);
 

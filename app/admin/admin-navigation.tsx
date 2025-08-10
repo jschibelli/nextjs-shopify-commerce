@@ -141,6 +141,12 @@ const navigation = [
     href: '/admin/settings',
     icon: Settings,
     description: 'Store configuration'
+  },
+  {
+    name: 'AI Assistant',
+    href: '/admin/ai',
+    icon: HelpCircle,
+    description: 'AI chat and tools'
   }
 ];
 
@@ -168,6 +174,12 @@ const quickActions = [
     href: '/admin/customers?tab=support',
     icon: Users,
     description: 'Support tickets'
+  },
+  {
+    name: 'AI Assistant',
+    href: '/admin/ai',
+    icon: HelpCircle,
+    description: 'AI chat and tools'
   }
 ];
 

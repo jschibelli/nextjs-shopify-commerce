@@ -317,8 +317,11 @@ Object.entries(loadedSessionData).forEach(([key, value]) => {
   sessionStorage.set(key, value as SessionData[]);
 });
 
-console.log('Loaded 2FA data for', twoFactorStorage.size, 'users');
-console.log('Loaded session data for', sessionStorage.size, 'users');
+const SECURITY_DEBUG = process.env.SECURITY_DEBUG === 'true';
+if (SECURITY_DEBUG) {
+  console.log('Loaded 2FA data for', twoFactorStorage.size, 'users');
+  console.log('Loaded session data for', sessionStorage.size, 'users');
+}
 
 export function storeTwoFactorData(userId: string, data: TwoFactorData): void {
   twoFactorStorage.set(userId, {

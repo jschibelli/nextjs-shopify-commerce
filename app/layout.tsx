@@ -1,6 +1,7 @@
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata, Viewport } from 'next';
 
+import StorefrontChat from '@/components/ui/storefront-chat';
 import { EnhancedCartProvider } from 'components/cart/enhanced-cart-context';
 import EnhancedCartModal from 'components/cart/enhanced-cart-modal';
 import DevRevalidateButton from 'components/dev-revalidate-button';
@@ -15,6 +16,7 @@ import { Toaster } from 'sonner';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: {
     default: 'Next.js Commerce',
     template: '%s | Next.js Commerce'
@@ -28,12 +30,6 @@ export const metadata: Metadata = {
     }
   ],
   creator: 'Vercel',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -101,6 +97,7 @@ export default function RootLayout({
               <WelcomeToast />
               <DevRevalidateButton />
               <Toaster closeButton />
+              <StorefrontChat />
             </WishlistProvider>
           </EnhancedCartProvider>
         </ThemeProvider>

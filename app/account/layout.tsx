@@ -31,9 +31,7 @@ async function AccountLayout({ children }: { children: React.ReactNode }) {
     const user = await auth.getCurrentUser();
 
     if (!user) {
-      // Clear any invalid cookies and redirect to login
-      const cookieStore = await cookies();
-      cookieStore.delete('customer_token');
+      // Token invalid; avoid mutating cookies here in a server component
       redirect('/login?error=session_expired');
     }
 

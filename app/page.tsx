@@ -23,8 +23,6 @@ async function getNewArrivalProducts() {
   // Try to get products from new-arrivals collection
   try {
     products = await getCollectionProducts({ collection: 'new-arrivals' });
-    console.log('New arrivals products found:', products.length);
-    console.log('New arrivals products:', products.map(p => ({ title: p.title, handle: p.handle })));
     
     if (products.length >= 2) {
       return {
@@ -35,7 +33,6 @@ async function getNewArrivalProducts() {
       // If only one product in new-arrivals, try to get a second from hydrogen collection
       try {
         const hydrogenProducts = await getCollectionProducts({ collection: 'hydrogen' });
-        console.log('Hydrogen products found:', hydrogenProducts.length);
         if (hydrogenProducts.length > 0) {
           return {
             femaleProduct: products[0], // New arrival product
@@ -53,13 +50,12 @@ async function getNewArrivalProducts() {
       };
     }
   } catch (error) {
-    console.log('Collection "new-arrivals" not found, trying hydrogen collection...');
+    // Collection not found, fall back
   }
 
   // Fallback to hydrogen collection
   try {
     products = await getCollectionProducts({ collection: 'hydrogen' });
-    console.log('Fallback hydrogen products found:', products.length);
     if (products.length >= 2) {
       return {
         femaleProduct: products[0],
@@ -72,7 +68,7 @@ async function getNewArrivalProducts() {
       };
     }
   } catch (error) {
-    console.log('Collection "hydrogen" not found');
+    // hydrogen collection not found
   }
 
   return { femaleProduct: null, maleProduct: null };
@@ -92,7 +88,6 @@ async function getHydrogenProducts() {
       products[2] || null
     ];
   } catch (error) {
-    console.log(`Collection "hydrogen" not found`);
     return [null, null, null];
   }
 }

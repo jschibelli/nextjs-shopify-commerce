@@ -180,18 +180,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
     initializeWishlist();
 
-    // Set up periodic authentication check (every 30 seconds)
-    const authCheckInterval = setInterval(async () => {
-      const isAuth = await checkAuthStatus();
-      if (isAuth && wishlistItems.length === 0) {
-        // If authenticated but no wishlist items, try to fetch them
-        await fetchWishlistItems();
-      }
-    }, 30000);
-
-    return () => {
-      clearInterval(authCheckInterval);
-    };
+    return () => {};
   }, [wishlistItems.length]);
 
   // Listen for authentication changes (login/logout)

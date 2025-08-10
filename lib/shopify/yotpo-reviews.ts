@@ -4,6 +4,12 @@
 const YOTPO_APP_KEY = process.env.YOTPO_APP_KEY;
 const YOTPO_SECRET_KEY = process.env.YOTPO_SECRET_KEY;
 
+// Reduce noisy logs in production builds
+const YOTPO_DEBUG = process.env.YOTPO_DEBUG === 'true';
+const ylog = (...args: any[]) => {
+  if (YOTPO_DEBUG) console.log(...args);
+};
+
 // Global in-memory storage for reviews during development
 // Using a global variable to ensure persistence across API calls
 declare global {
@@ -80,7 +86,7 @@ function loadStoredReviewsFromFile(): Map<string, YotpoReview[]> {
       return new Map(Object.entries(parsed));
     }
   } catch (error) {
-    console.log('Yotpo Debug - Error loading reviews from file:', error);
+    ylog('Yotpo Debug - Error loading reviews from file:', error);
   }
   return new Map();
 }
@@ -93,7 +99,7 @@ function loadModerationLogFromFile(): Array<ModerationAction> {
       return JSON.parse(data);
     }
   } catch (error) {
-    console.log('Yotpo Debug - Error loading moderation log from file:', error);
+    ylog('Yotpo Debug - Error loading moderation log from file:', error);
   }
   return [];
 }
@@ -103,9 +109,9 @@ function saveStoredReviewsToFile(): void {
   try {
     const data = Object.fromEntries(global.reviewStorage);
     writeFileSync(STORAGE_FILE, JSON.stringify(data, null, 2));
-    console.log('Yotpo Debug - Saved reviews to file');
+    ylog('Yotpo Debug - Saved reviews to file');
   } catch (error) {
-    console.log('Yotpo Debug - Error saving reviews to file:', error);
+    ylog('Yotpo Debug - Error saving reviews to file:', error);
   }
 }
 
@@ -113,9 +119,9 @@ function saveStoredReviewsToFile(): void {
 function saveModerationLogToFile(): void {
   try {
     writeFileSync(MODERATION_LOG_FILE, JSON.stringify(global.reviewModerationLog, null, 2));
-    console.log('Yotpo Debug - Saved moderation log to file');
+    ylog('Yotpo Debug - Saved moderation log to file');
   } catch (error) {
-    console.log('Yotpo Debug - Error saving moderation log to file:', error);
+    ylog('Yotpo Debug - Error saving moderation log to file:', error);
   }
 }
 
@@ -123,20 +129,20 @@ function saveModerationLogToFile(): void {
 if (global.reviewStorage.size === 0) {
   const fileStorage = loadStoredReviewsFromFile();
   global.reviewStorage = fileStorage;
-  console.log('Yotpo Debug - Loaded reviews from file:', global.reviewStorage.size, 'products');
+  ylog('Yotpo Debug - Loaded reviews from file:', global.reviewStorage.size, 'products');
 }
 
 if (global.reviewModerationLog.length === 0) {
   const fileLog = loadModerationLogFromFile();
   global.reviewModerationLog = fileLog;
-  console.log('Yotpo Debug - Loaded moderation log from file:', global.reviewModerationLog.length, 'actions');
+  ylog('Yotpo Debug - Loaded moderation log from file:', global.reviewModerationLog.length, 'actions');
 }
 
 // Debug environment variables (only in development)
 if (process.env.NODE_ENV === 'development') {
-  console.log('Yotpo Debug - APP_KEY:', YOTPO_APP_KEY ? 'SET' : 'NOT SET');
-  console.log('Yotpo Debug - SECRET_KEY:', YOTPO_SECRET_KEY ? 'SET' : 'NOT SET');
-  console.log('Yotpo Debug - STORE_DOMAIN:', process.env.SHOPIFY_STORE_DOMAIN);
+  ylog('Yotpo Debug - APP_KEY:', YOTPO_APP_KEY ? 'SET' : 'NOT SET');
+  ylog('Yotpo Debug - SECRET_KEY:', YOTPO_SECRET_KEY ? 'SET' : 'NOT SET');
+  ylog('Yotpo Debug - STORE_DOMAIN:', process.env.SHOPIFY_STORE_DOMAIN);
 }
 
 export async function getProductReviewsYotpo(productId: string): Promise<YotpoReview[]> {
@@ -148,13 +154,13 @@ export async function getProductReviewsYotpo(productId: string): Promise<YotpoRe
   try {
     // Extract just the numeric product ID from the Shopify GID
     const numericProductId = productId.replace('gid://shopify/Product/', '');
-    console.log('Yotpo Debug - Original product ID:', productId);
-    console.log('Yotpo Debug - Numeric product ID:', numericProductId);
+    ylog('Yotpo Debug - Original product ID:', productId);
+    ylog('Yotpo Debug - Numeric product ID:', numericProductId);
     
     // Use the correct Yotpo API endpoint for fetching reviews
     // Based on Yotpo API documentation: https://developers.yotpo.com/reference
     const url = `https://api.yotpo.com/v1/widget/${YOTPO_APP_KEY}/products/${numericProductId}/reviews`;
-    console.log('Yotpo Debug - Fetching reviews from:', url);
+    ylog('Yotpo Debug - Fetching reviews from:', url);
     
     const response = await fetch(url, {
       headers: {
@@ -162,25 +168,25 @@ export async function getProductReviewsYotpo(productId: string): Promise<YotpoRe
       }
     });
     
-    console.log('Yotpo Debug - Response status:', response.status);
-    console.log('Yotpo Debug - Response ok:', response.ok);
+    ylog('Yotpo Debug - Response status:', response.status);
+    ylog('Yotpo Debug - Response ok:', response.ok);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.log('Yotpo Debug - Error response:', errorText);
+      ylog('Yotpo Debug - Error response:', errorText);
       console.log('Yotpo API not available, using stored reviews');
       return getStoredReviews(productId);
     }
     
     const data = await response.json();
-    console.log('Yotpo Debug - Response data:', data);
+    ylog('Yotpo Debug - Response data:', data);
     
     // Combine API reviews with stored reviews
     const apiReviews = data.response?.reviews || [];
     const storedReviews = getStoredReviews(productId);
     const allReviews = [...storedReviews, ...apiReviews];
     
-    console.log('Yotpo Debug - Combined reviews:', {
+    ylog('Yotpo Debug - Combined reviews:', {
       apiReviews: apiReviews.length,
       storedReviews: storedReviews.length,
       totalReviews: allReviews.length
@@ -188,7 +194,7 @@ export async function getProductReviewsYotpo(productId: string): Promise<YotpoRe
     
     return allReviews;
   } catch (error) {
-    console.log('Yotpo Debug - Fetch error:', error);
+    ylog('Yotpo Debug - Fetch error:', error);
     console.log('Yotpo API not available, using stored reviews');
     return getStoredReviews(productId);
   }
@@ -199,14 +205,14 @@ function getStoredReviews(productId: string): YotpoReview[] {
   const reviews = global.reviewStorage.get(productId) || [];
   // Filter out deleted reviews for public display
   const activeReviews = reviews.filter(review => review.status !== 'deleted');
-  console.log('Yotpo Debug - Retrieved stored reviews for product:', productId, 'Count:', activeReviews.length);
+  ylog('Yotpo Debug - Retrieved stored reviews for product:', productId, 'Count:', activeReviews.length);
   return activeReviews;
 }
 
 // Get all stored reviews for a product (including deleted for moderation)
 function getAllStoredReviews(productId: string): YotpoReview[] {
   const reviews = global.reviewStorage.get(productId) || [];
-  console.log('Yotpo Debug - Retrieved all stored reviews for product:', productId, 'Count:', reviews.length);
+  ylog('Yotpo Debug - Retrieved all stored reviews for product:', productId, 'Count:', reviews.length);
   return reviews;
 }
 
@@ -214,15 +220,15 @@ function getAllStoredReviews(productId: string): YotpoReview[] {
 function storeReview(productId: string, review: YotpoReview): void {
   const existingReviews = global.reviewStorage.get(productId) || [];
   global.reviewStorage.set(productId, [...existingReviews, review]);
-  console.log('Yotpo Debug - Stored review for product:', productId);
-  console.log('Yotpo Debug - Review details:', {
+  ylog('Yotpo Debug - Stored review for product:', productId);
+  ylog('Yotpo Debug - Review details:', {
     id: review.id,
     title: review.title,
     author: review.reviewer_name,
     rating: review.rating,
     status: review.status
   });
-  console.log('Yotpo Debug - Total stored reviews for product:', global.reviewStorage.get(productId)?.length || 0);
+  ylog('Yotpo Debug - Total stored reviews for product:', global.reviewStorage.get(productId)?.length || 0);
   
   // Save to file
   saveStoredReviewsToFile();
@@ -258,7 +264,7 @@ export function approveReview(productId: string, reviewId: number, moderator: st
       newStatus: 'approved'
     });
     
-    console.log('Yotpo Debug - Approved review:', reviewId);
+    ylog('Yotpo Debug - Approved review:', reviewId);
     return true;
   }
   return false;
@@ -293,7 +299,7 @@ export function rejectReview(productId: string, reviewId: number, moderator: str
       newStatus: 'rejected'
     });
     
-    console.log('Yotpo Debug - Rejected review:', reviewId);
+    ylog('Yotpo Debug - Rejected review:', reviewId);
     return true;
   }
   return false;
@@ -328,7 +334,7 @@ export function deleteReview(productId: string, reviewId: number, moderator: str
       newStatus: 'deleted'
     });
     
-    console.log('Yotpo Debug - Deleted review:', reviewId);
+    ylog('Yotpo Debug - Deleted review:', reviewId);
     return true;
   }
   return false;
@@ -372,7 +378,7 @@ export function editReview(productId: string, reviewId: number, updates: {
       newStatus: review?.status
     });
     
-    console.log('Yotpo Debug - Edited review:', reviewId, updates);
+    ylog('Yotpo Debug - Edited review:', reviewId, updates);
     return true;
   }
   return false;
@@ -382,7 +388,7 @@ export function editReview(productId: string, reviewId: number, updates: {
 function logModerationAction(action: ModerationAction): void {
   global.reviewModerationLog.push(action);
   saveModerationLogToFile();
-  console.log('Yotpo Debug - Logged moderation action:', action);
+  ylog('Yotpo Debug - Logged moderation action:', action);
 }
 
 // Get moderation log
@@ -545,9 +551,9 @@ export function bulkDeleteReviews(reviewIds: Array<{ productId: string; reviewId
 
 // Debug function to test storage
 export function debugStorage(): void {
-  console.log('Yotpo Debug - Storage test - All stored reviews:', Array.from(global.reviewStorage.entries()));
-  console.log('Yotpo Debug - Storage test - Storage size:', global.reviewStorage.size);
-  console.log('Yotpo Debug - Moderation log size:', global.reviewModerationLog.length);
+  ylog('Yotpo Debug - Storage test - All stored reviews:', Array.from(global.reviewStorage.entries()));
+  ylog('Yotpo Debug - Storage test - Storage size:', global.reviewStorage.size);
+  ylog('Yotpo Debug - Moderation log size:', global.reviewModerationLog.length);
 }
 
 // Test Yotpo API connectivity
@@ -564,7 +570,7 @@ export async function testYotpoAPI(): Promise<{
   }
 
   try {
-    console.log('Yotpo Debug - Testing API connectivity...');
+    ylog('Yotpo Debug - Testing API connectivity...');
     console.log('Yotpo Debug - App Key:', YOTPO_APP_KEY);
     console.log('Yotpo Debug - Secret Key:', YOTPO_SECRET_KEY ? 'SET' : 'NOT SET');
     console.log('Yotpo Debug - Store Domain:', process.env.SHOPIFY_STORE_DOMAIN);
