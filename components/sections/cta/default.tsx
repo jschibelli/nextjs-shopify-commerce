@@ -2,9 +2,9 @@ import { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { Button, type ButtonProps } from "@/components/ui/button";
-import Glow from "@/components/ui/glow";
-import { Section } from "@/components/ui/section";
+import { Button, type ButtonProps } from "../../ui/button";
+import Glow from "../../ui/glow";
+import { Section } from "../../ui/section";
 
 interface CTAButtonProps {
   href: string;
@@ -24,7 +24,7 @@ export default function CTA({
   title = "Start building",
   buttons = [
     {
-      href: "/search",
+      href: "https://www.launchuicomponents.com/",
       text: "Get Started",
       variant: "default",
     },
@@ -61,4 +61,4 @@ export default function CTA({
       </div>
     </Section>
   );
-} 
+}

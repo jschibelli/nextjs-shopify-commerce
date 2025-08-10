@@ -6,7 +6,7 @@ import { Input } from 'components/ui/input';
 import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface LoginPageProps {
   searchParams: Promise<{ error?: string }>;
@@ -19,6 +19,19 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const demoConfigRef = useRef<{ customerEmail: string; adminEmail: string; password: string } | null>(null);
+  const [demoRole, setDemoRole] = useState<null | 'customer' | 'admin'>(null);
+
+  async function loadDemoConfig() {
+    if (demoConfigRef.current) return demoConfigRef.current;
+    const res = await fetch('/api/auth/demo-config').catch(() => null);
+    if (res && res.ok) {
+      const cfg = await res.json();
+      demoConfigRef.current = cfg;
+      return cfg;
+    }
+    return null;
+  }
 
   // Handle URL error parameters
   useEffect(() => {
@@ -54,7 +67,26 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
     setError('');
 
     try {
-      // First, try admin login
+      // If demo prefill was chosen, use demo route
+      if (demoRole) {
+        const cfg = await loadDemoConfig();
+        const demoPassword = cfg?.password || password;
+        const res = await fetch('/api/auth/demo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: demoRole, password: demoPassword })
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setError(data.error || 'Invalid demo password');
+          return;
+        }
+        window.dispatchEvent(new CustomEvent('login-success'));
+        router.push(demoRole === 'admin' ? '/admin' : '/');
+        return;
+      }
+
+      // Real account sign-in flow: try admin first, then customer
       const adminResponse = await fetch('/api/auth/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,7 +100,6 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
         return;
       }
 
-      // Then customer login
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,12 +126,14 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
     }
   };
 
-  // Demo starters moved into the card
+  // Demo starters now load password from server config automatically
   const startDemoCustomer = async () => {
+    const cfg = await loadDemoConfig();
+    const demoPassword = cfg?.password || password;
     const res = await fetch('/api/auth/demo', { 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: 'customer', password })
+      body: JSON.stringify({ role: 'customer', password: demoPassword })
     });
     if (res.ok) {
       window.dispatchEvent(new CustomEvent('login-success'));
@@ -112,10 +145,12 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
   };
 
   const startDemoAdmin = async () => {
+    const cfg = await loadDemoConfig();
+    const demoPassword = cfg?.password || password;
     const res = await fetch('/api/auth/demo', { 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: 'admin', password })
+      body: JSON.stringify({ role: 'admin', password: demoPassword })
     });
     if (res.ok) {
       window.dispatchEvent(new CustomEvent('login-success'));
@@ -132,28 +167,22 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
         <div className="mx-auto w-12 h-12 bg-primary rounded-full flex items-center justify-center mb-4">
           <User className="w-6 h-6 text-primary-foreground" />
         </div>
-        <CardTitle className="text-2xl">Welcome Back</CardTitle>
-        <CardDescription>
-          Sign in to your account to manage your orders and profile
-        </CardDescription>
+        <CardTitle className="text-2xl">Welcome back</CardTitle>
+        <CardDescription>Sign in to manage your account</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
             <div className="relative w-full rounded-lg border p-4 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
               <Lock className="h-4 w-4 absolute left-4 top-4 text-red-600 dark:text-red-400" />
               <div className="pl-7">
-                <p className="text-sm text-red-700 dark:text-red-300">
-                  {error}
-                </p>
+                <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
               </div>
             </div>
           )}
-          
+
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
-            </label>
+            <label htmlFor="email" className="text-sm font-medium">Email</label>
             <div className="relative">
               <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -167,11 +196,9 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
               />
             </div>
           </div>
-          
+
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
-              Password (also used for demo)
-            </label>
+            <label htmlFor="password" className="text-sm font-medium">Password</label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -187,18 +214,14 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full" 
-            size="lg"
-            disabled={isLoading}
-          >
+
+          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
             {isLoading ? (
               <div className="flex items-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -212,33 +235,48 @@ function LoginForm({ searchParams }: { searchParams?: Promise<{ error?: string }
             )}
           </Button>
 
-          <div className="mt-2 space-y-2">
-            <Button type="button" onClick={startDemoCustomer} className="w-full" variant="secondary">
-              Try Demo Customer
-            </Button>
-            <Button type="button" onClick={startDemoAdmin} className="w-full" variant="outline">
-              Try Demo Admin
-            </Button>
+          <div className="relative flex items-center justify-center my-1">
+            <span className="h-px w-full bg-border" />
+            <span className="px-3 text-xs text-muted-foreground">or</span>
+            <span className="h-px w-full bg-border" />
           </div>
 
-          <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Demo uses a single password. Set `DEMO_PASSWORD` in `.env.local`.
-            </p>
+          {/* Demo section */}
+          <div className="rounded-md border p-3 bg-muted/40 space-y-3">
+            <p className="text-sm font-medium text-foreground">Try the demo</p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={async () => {
+                  const cfg = await loadDemoConfig();
+                  if (cfg) { setEmail(cfg.customerEmail); setPassword(cfg.password); setDemoRole('customer'); }
+                }}
+              >
+                Prefill Customer
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                  const cfg = await loadDemoConfig();
+                  if (cfg) { setEmail(cfg.adminEmail); setPassword(cfg.password); setDemoRole('admin'); }
+                }}
+              >
+                Prefill Admin
+              </Button>
+            </div>
+            {demoRole && (
+              <p className="text-xs text-muted-foreground">Demo mode selected: {demoRole === 'admin' ? 'Admin' : 'Customer'} — press Sign In</p>
+            )}
           </div>
-          
+
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
-              <Link href="/signup" className="text-primary hover:underline">
-                Sign up
-              </Link>
+              <Link href="/signup" className="text-primary hover:underline">Sign up</Link>
             </p>
           </div>
-          
-          <p className="text-sm text-muted-foreground text-center">
-            By signing in, you agree to our terms of service and privacy policy.
-          </p>
         </form>
       </CardContent>
     </Card>

@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { role, password } = await request.json().catch(() => ({ role: 'customer', password: undefined }));
-  const expected = process.env.DEMO_PASSWORD;
+  const expected = process.env.DEMO_PASSWORD || process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'demo';
   if (!expected || password !== expected) {
     return NextResponse.json({ error: 'Invalid demo password' }, { status: 401 });
   }
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   cookieStore.set('demo', 'true', { httpOnly: true, sameSite: 'lax', path: '/' });
 
   if (role === 'admin') {
-    const demoEmail = process.env.DEMO_ADMIN_EMAIL || 'demo+admin@example.com';
+    const demoEmail = process.env.DEMO_ADMIN_EMAIL || process.env.NEXT_PUBLIC_DEMO_ADMIN_EMAIL || 'demo+admin@example.com';
     cookieStore.set('demo_role', 'admin', { httpOnly: true, sameSite: 'lax', path: '/' });
 
     const token = {
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
   // default to customer
   const demoCustomerId = process.env.DEMO_CUSTOMER_ID || 'demo_customer';
-  const demoEmail = process.env.DEMO_CUSTOMER_EMAIL || 'demo+customer@example.com';
+  const demoEmail = process.env.DEMO_CUSTOMER_EMAIL || process.env.NEXT_PUBLIC_DEMO_CUSTOMER_EMAIL || 'demo+customer@example.com';
   cookieStore.set('demo_role', 'customer', { httpOnly: true, sameSite: 'lax', path: '/' });
 
   const token = {
